@@ -4,7 +4,7 @@ import SearchImage from "./images/SearchImage";
 
 import { BACKGROUND, GREEN, PURPLE, RED } from "../helpers/colors";
 
-const Navbar = ({ isAdmin, userName }) => {
+const Navbar = ({ userName }) => {
   const location = useLocation();
 
   return (

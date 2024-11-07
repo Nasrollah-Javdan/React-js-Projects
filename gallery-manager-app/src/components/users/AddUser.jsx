@@ -1,36 +1,53 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-
-import { Spinner } from "..";
 import { COMMENT, GREEN, PURPLE } from "../../helpers/colors";
 import { addUser } from "../../services";
-import { useState } from "react";
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
+
 const AddUser = () => {
   const location = useLocation();
   const { userName, isAdmin } = location.state;
   const navigate = useNavigate();
-  const [user, setUser] = useState({ userName: '', userNumber: '', userPassword: '', isAdmin: '0' });
-  const [confirmPassword, setConfirmPassword] = useState('');
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setUser({ ...user, [name]: value, isAdmin: '0' });
-  };
 
-  const handleConfirmPasswordChange = (e) => {
-    setConfirmPassword(e.target.value);
-  };
+  const validationSchema = Yup.object({
+    userName: Yup.string()
+      .required("نام کاربری اجباری است")
+      .matches(/^[\u0600-\u06FFa-zA-Z0-9_ ]+$/, "فقط حروف انگلیسی، اعداد، حروف فارسی و فاصله بین کلمات مجاز است"),
+    userNumber: Yup.string()
+      .required("شماره همراه اجباری است")
+      .matches(/^[0-9]+$/, "فقط اعداد مجاز است"),
+    userPassword: Yup.string()
+      .required("رمز عبور اجباری است")
+      .min(8, "رمز عبور باید حداقل 8 کاراکتر باشد"),
+    confirmPassword: Yup.string()
+      .oneOf([Yup.ref('userPassword'), null], "رمز عبور مطابقت ندارد")
+      .required("تکرار رمز عبور اجباری است"),
+  });
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (user.userPassword !== confirmPassword) {
-      alert('Passwords do not match!');
-      return;
-    }
-    const addedUser = await addUser(user);
-    alert(`User created with ID: ${addedUser.userId}`);
-    navigate(`/users`, {state: {userName, isAdmin}});
-  };
-  
+  const formik = useFormik({
+    initialValues: {
+      userName: '',
+      userNumber: '',
+      userPassword: '',
+      confirmPassword: '',
+    },
+    validationSchema: validationSchema,
+    onSubmit: async (values) => {
+      try {
+        const newUser = {
+          userName: values.userName,
+          userNumber: values.userNumber,
+          userPassword: values.userPassword,
+        };
+        const addedUser = await addUser(newUser);
+        alert(`    کاربر جدید با شناسه " ${addedUser.userId} " با موفقیت ایجاد شد`);
+        navigate(`/users`, { state: { userName, isAdmin } });
+      } catch (error) {
+        alert('نام کاربری یا شماره همراه وارد شده قبلا ثبت شده است');
+      }
+    },
+  });
 
   return (
     <>
@@ -57,7 +74,7 @@ const AddUser = () => {
           <hr style={{ backgroundColor: GREEN }} />
           <div className="row mt-5">
             <div className="col-md-4">
-              <form onSubmit={handleSubmit}>
+              <form onSubmit={formik.handleSubmit}>
                 <div className="mb-2">
                   <input
                     name="userName"
@@ -65,9 +82,13 @@ const AddUser = () => {
                     className="form-control"
                     required={true}
                     placeholder="نام مشتری"
-                    value={user.userName}
-                    onChange={handleInputChange}
+                    value={formik.values.userName}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
                   />
+                  {formik.touched.userName && formik.errors.userName ? (
+                    <div className="text-danger">{formik.errors.userName}</div>
+                  ) : null}
                 </div>
                 <div className="mb-2">
                   <input
@@ -76,9 +97,13 @@ const AddUser = () => {
                     className="form-control"
                     required={true}
                     placeholder="شماره همراه مشتری"
-                    value={user.userNumber}
-                    onChange={handleInputChange}
+                    value={formik.values.userNumber}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
                   />
+                  {formik.touched.userNumber && formik.errors.userNumber ? (
+                    <div className="text-danger">{formik.errors.userNumber}</div>
+                  ) : null}
                 </div>
                 <div className="mb-2">
                   <input
@@ -87,19 +112,28 @@ const AddUser = () => {
                     className="form-control"
                     required={true}
                     placeholder="رمز عبور"
-                    value={user.userPassword}
-                    onChange={handleInputChange}
+                    value={formik.values.userPassword}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
                   />
+                  {formik.touched.userPassword && formik.errors.userPassword ? (
+                    <div className="text-danger">{formik.errors.userPassword}</div>
+                  ) : null}
                 </div>
                 <div className="mb-2">
                   <input
+                    name="confirmPassword"
                     type="password"
                     className="form-control"
                     required={true}
                     placeholder="تکرار رمز"
-                    value={confirmPassword}
-                    onChange={handleConfirmPasswordChange}
+                    value={formik.values.confirmPassword}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
                   />
+                  {formik.touched.confirmPassword && formik.errors.confirmPassword ? (
+                    <div className="text-danger">{formik.errors.confirmPassword}</div>
+                  ) : null}
                 </div>
                 <div className="mx-2">
                   <input
@@ -110,7 +144,7 @@ const AddUser = () => {
                   />
                   <Link
                     to={`/users`}
-                    state={{userName, isAdmin}}
+                    state={{ userName, isAdmin }}
                     className="btn mx-2"
                     style={{ backgroundColor: COMMENT }}
                   >

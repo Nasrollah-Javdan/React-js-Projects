@@ -3,7 +3,6 @@ import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { GREEN } from '../helpers/colors';
 import axios from 'axios';
-import Navbar from './Navbar';
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -11,7 +10,7 @@ const LoginPage = () => {
   const validationSchema = Yup.object({
     name: Yup.string()
       .required('نام کاربری اجباری است')
-      .matches(/^[a-zA-Z0-9_]+$/, 'فقط حروف انگلیسی و اعداد مجاز است'),
+      .matches(/^[\u0600-\u06FFa-zA-Z0-9_ ]+$/, "فقط حروف انگلیسی، اعداد، حروف فارسی و فاصله بین کلمات مجاز است"),
     password: Yup.string()
       .required('رمز عبور اجباری است')
       .min(8, 'رمز عبور باید حداقل 8 کاراکتر باشد'),
@@ -29,11 +28,10 @@ const LoginPage = () => {
         if (response.data.authenticated) {
           navigate('/images', {state : {isAdmin: response.data.isAdmin, userName: response.data.userName}});
         } else {
-          alert('کاربر غیر مجاز');
+          alert('نام کاربری یا رمز عبور اشتباه است . لطفا مقادیر صحیح را وارد نمایید');
         }
       } catch (error) {
-        console.error('Login error:', error);
-        alert('خطا در ورود به سیستم');
+        alert('مشکلی پیش آمده است . لطفا با پشتیبانی تماس بگیرید');
       }
     },
   });

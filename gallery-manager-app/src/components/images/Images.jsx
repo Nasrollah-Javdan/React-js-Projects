@@ -8,17 +8,15 @@ import {
   GREEN,
   ORANGE,
   PINK,
-  RED,
 } from "../../helpers/colors";
 import Navbar from "../Navbar";
 
 const Images = ({ confirmDelete, confirmDownload }) => {
   const { state } = useLocation();
   const { isAdmin, userName } = state;
-  console.log(isAdmin, userName);
   return (
     <>
-      <Navbar isAdmin={isAdmin} userName={userName} />
+      <Navbar userName={userName} />
       <section className="container">
         <div className="grid">
           <div className="row">
@@ -80,7 +78,7 @@ const Images = ({ confirmDelete, confirmDownload }) => {
       ) : (
         <section className="container">
           <div className="row">
-            {true ? (
+            {false ? (
               <Image
                 confirmDelete={() => confirmDelete()}
                 confirmDownload={confirmDownload}

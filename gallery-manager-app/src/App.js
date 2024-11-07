@@ -19,9 +19,9 @@ import {
   COMMENT,
   GREEN,
   RED,
+  BACKGROUND,
 } from "./helpers/colors";
 import AddUser from "./components/users/AddUser";
-import DeleteUser from "./components/users/DeleteUser";
 import Users from "./components/users/Users";
 import EditUser from "./components/users/EditUser";
 
@@ -115,7 +115,7 @@ const App = () => {
   };
 
   return (
-    <div className="App">
+    <div className="App" >
       {(location.pathname !== "/users") && (location.pathname !== "/images") ? (
         <Navbar />
       ) : null}

@@ -33,11 +33,11 @@ const Users = ({ confirmDelete }) => {
     fetchData();
   }, []);
 
-  console.log(data);
+  // console.log(data);
 
   return (
     <>
-      <Navbar isAdmin={isAdmin} userName={userName} />
+      <Navbar userName={userName} />
       <section className="container">
         <div className="grid">
           <div className="row">
