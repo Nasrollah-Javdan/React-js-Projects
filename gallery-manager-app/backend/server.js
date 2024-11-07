@@ -7,7 +7,6 @@ const bodyParser = require("body-parser");
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
-
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
@@ -76,7 +75,7 @@ app.get("/users/:userId", (req, res) => {
     if (err) {
       return res.status(500).send(err);
     }
-    res.json(result[0]); // Assuming userId is unique and will return one record
+    res.json(result[0]); 
   });
 });
 
