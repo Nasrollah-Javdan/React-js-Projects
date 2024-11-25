@@ -1,19 +1,38 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { COMMENT, GREEN, PURPLE } from "../../helpers/colors";
-import { addUser } from "../../services";
-import { useFormik } from 'formik';
-import * as Yup from 'yup';
+import { addUser, getLastUserId } from "../../services";
+import { useFormik } from "formik";
+import * as Yup from "yup";
+import { useEffect, useState } from "react";
+import { FaEye, FaEyeSlash } from "react-icons/fa"; // آیکون‌های چشم باز و بسته
+import bcrypt from 'bcryptjs'; // کتابخانه برای هش کردن رمز عبور
 
 const AddUser = () => {
   const location = useLocation();
   const { userName, isAdmin } = location.state;
+  const [lastUser, setLastUser] = useState(null); // استفاده از مقدار اولیه null
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const fetchLastUser = async () => {
+      try {
+        const data = await getLastUserId();
+        setLastUser(data[0]); // فرض کنیم data یک آرایه است و عنصر اول را تنظیم می‌کند
+      } catch (error) {
+        console.error("Error fetching last user:", error);
+      }
+    };
+    fetchLastUser();
+  }, []);
 
   const validationSchema = Yup.object({
     userName: Yup.string()
       .required("نام کاربری اجباری است")
-      .matches(/^[\u0600-\u06FFa-zA-Z0-9_ ]+$/, "فقط حروف انگلیسی، اعداد، حروف فارسی و فاصله بین کلمات مجاز است"),
+      .matches(
+        /^[\u0600-\u06FFa-zA-Z0-9_ ]+$/,
+        "فقط حروف انگلیسی، اعداد، حروف فارسی و فاصله بین کلمات مجاز است"
+      ),
     userNumber: Yup.string()
       .required("شماره همراه اجباری است")
       .matches(/^[0-9]+$/, "فقط اعداد مجاز است"),
@@ -21,33 +40,50 @@ const AddUser = () => {
       .required("رمز عبور اجباری است")
       .min(8, "رمز عبور باید حداقل 8 کاراکتر باشد"),
     confirmPassword: Yup.string()
-      .oneOf([Yup.ref('userPassword'), null], "رمز عبور مطابقت ندارد")
+      .oneOf([Yup.ref("userPassword"), null], "رمز عبور مطابقت ندارد")
       .required("تکرار رمز عبور اجباری است"),
   });
 
   const formik = useFormik({
     initialValues: {
-      userName: '',
-      userNumber: '',
-      userPassword: '',
-      confirmPassword: '',
+      userName: "",
+      userNumber: "",
+      userPassword: "",
+      confirmPassword: "",
     },
     validationSchema: validationSchema,
     onSubmit: async (values) => {
       try {
+        const hashedPassword = await bcrypt.hash(values.userPassword, 10); // هش کردن رمز عبور
         const newUser = {
           userName: values.userName,
           userNumber: values.userNumber,
-          userPassword: values.userPassword,
+          userPassword: hashedPassword,
         };
         const addedUser = await addUser(newUser);
-        alert(`    کاربر جدید با شناسه " ${addedUser.userId} " با موفقیت ایجاد شد`);
+        alert(
+          `کاربر جدید با شناسه "${addedUser.userId}" با موفقیت ایجاد شد`
+        );
         navigate(`/users`, { state: { userName, isAdmin } });
       } catch (error) {
-        alert('نام کاربری یا شماره همراه وارد شده قبلا ثبت شده است');
+        alert("نام کاربری یا شماره همراه وارد شده قبلا ثبت شده است");
       }
     },
   });
+
+  const generatePassword = () => {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let password = '';
+    for (let i = 0; i < 10; i++) {
+      password += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    formik.setFieldValue('userPassword', password);
+    formik.setFieldValue('confirmPassword', password);
+  };
+
+  const toggleShowPassword = () => {
+    setShowPassword(!showPassword);
+  };
 
   return (
     <>
@@ -74,7 +110,18 @@ const AddUser = () => {
           <hr style={{ backgroundColor: GREEN }} />
           <div className="row mt-5">
             <div className="col-md-4">
-              <form onSubmit={formik.handleSubmit}>
+              <form onSubmit={formik.handleSubmit} autoComplete="off">
+                <div className="mb-2">
+                  <input
+                    name="userId"
+                    type="text"
+                    className="form-control"
+                    placeholder="شناسه آخرین کاربر"
+                    value={lastUser ? lastUser.userId + 1 : ""}
+                    disabled
+                    autoComplete="off"
+                  />
+                </div>
                 <div className="mb-2">
                   <input
                     name="userName"
@@ -85,6 +132,7 @@ const AddUser = () => {
                     value={formik.values.userName}
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
+                    autoComplete="off"
                   />
                   {formik.touched.userName && formik.errors.userName ? (
                     <div className="text-danger">{formik.errors.userName}</div>
@@ -100,40 +148,70 @@ const AddUser = () => {
                     value={formik.values.userNumber}
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
+                    autoComplete="off"
                   />
                   {formik.touched.userNumber && formik.errors.userNumber ? (
-                    <div className="text-danger">{formik.errors.userNumber}</div>
+                    <div className="text-danger">
+                      {formik.errors.userNumber}
+                    </div>
                   ) : null}
                 </div>
                 <div className="mb-2">
-                  <input
-                    name="userPassword"
-                    type="password"
-                    className="form-control"
-                    required={true}
-                    placeholder="رمز عبور"
-                    value={formik.values.userPassword}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                  />
+                  <div className="input-group">
+                    <input
+                      name="userPassword"
+                      type={showPassword ? "text" : "password"}
+                      className="form-control"
+                      required={true}
+                      placeholder="رمز عبور"
+                      value={formik.values.userPassword}
+                      onChange={formik.handleChange}
+                      onBlur={formik.handleBlur}
+                      autoComplete="new-password"
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary rounded"
+                      onClick={toggleShowPassword}
+                      
+                    >
+                      {showPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
                   {formik.touched.userPassword && formik.errors.userPassword ? (
-                    <div className="text-danger">{formik.errors.userPassword}</div>
+                    <div className="text-danger">
+                      {formik.errors.userPassword}
+                    </div>
                   ) : null}
                 </div>
                 <div className="mb-2">
                   <input
                     name="confirmPassword"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     className="form-control"
                     required={true}
                     placeholder="تکرار رمز"
                     value={formik.values.confirmPassword}
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
+                    autoComplete="new-password"
                   />
-                  {formik.touched.confirmPassword && formik.errors.confirmPassword ? (
-                    <div className="text-danger">{formik.errors.confirmPassword}</div>
+                  {formik.touched.confirmPassword &&
+                  formik.errors.confirmPassword ? (
+                    <div className="text-danger">
+                      {formik.errors.confirmPassword}
+                    </div>
                   ) : null}
+                </div>
+                <div className="mb-2 d-flex justify-content-end">
+                  <button
+                    type="button"
+                    className="btn btn-outline-primary"
+                    onClick={generatePassword}
+                    style={{margin: "0 auto"}}
+                  >
+                    تولید رمز عبور
+                  </button>
                 </div>
                 <div className="mx-2">
                   <input

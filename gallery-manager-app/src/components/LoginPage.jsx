@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
-import { GREEN } from '../helpers/colors';
+import { GREEN, RED } from '../helpers/colors';
 import axios from 'axios';
 
 const LoginPage = () => {
@@ -70,6 +70,9 @@ const LoginPage = () => {
           <div className="text-danger">{formik.errors.password}</div>
         ) : null}
       </div>
+      <button type="" className="btn fw-bold mx-2" style={{ backgroundColor: RED }}>
+        فراموشی رمز 
+      </button>
       <button type="submit" className="btn fw-bold" style={{ backgroundColor: GREEN }}>
         ورود <i className="fas fa-sign-in-alt"></i>
       </button>

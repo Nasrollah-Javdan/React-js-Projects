@@ -56,11 +56,11 @@ const User = ({ id, name, phone, setData, isAdmin, userName }) => {
   };
 
   return (
-    <div className="col-md-4">
+    <div className="col-md-4 my-1">
       <div style={{ backgroundColor: CURRENTLINE }} className="card">
         <div className="card-body d-flex p-2">
-          <div className="row align-items-center d-flex justify-content-center">
-            <div className="col">
+          <div style={{justifyContent: "center"}} className="row align-items-center d-flex justify-content-center">
+            <div className="col-10" style={{width: "90%"}}>
               <ul className="list-group p-0 mx-1">
                 <li className="list-group-item list-group-item-dark">
                   شناسه مشتری : {"  "}
@@ -76,7 +76,7 @@ const User = ({ id, name, phone, setData, isAdmin, userName }) => {
                 </li>
               </ul>
             </div>
-            <div className="col-md-1 col-sm-1 d-flex flex-column align-items-center">
+            <div style={{width: "5%"}} className="col-2 col-sm-2 d-flex flex-column align-items-center">
               {isAdmin ? (
                 <>
                   <Link

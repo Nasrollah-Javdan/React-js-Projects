@@ -46,6 +46,7 @@ const Users = ({ confirmDelete }) => {
                 <p className="h3 float-end">
                   <Link
                     to={`/images/add`}
+                    state={{isAdmin, userName}}
                     className="btn m-2"
                     style={{ backgroundColor: PINK }}
                   >

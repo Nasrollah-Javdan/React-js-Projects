@@ -1,19 +1,32 @@
 import { Link, useLocation } from "react-router-dom";
-
+import { useState, useEffect } from "react";
+import { getAllImages, getUserImages } from "../../services";
 import Image from "../images/Image";
 import Spinner from "../Spinner";
-import {
-  CURRENTLINE,
-  CYAN,
-  GREEN,
-  ORANGE,
-  PINK,
-} from "../../helpers/colors";
+import { CURRENTLINE, CYAN, GREEN, ORANGE, PINK } from "../../helpers/colors";
 import Navbar from "../Navbar";
 
 const Images = ({ confirmDelete, confirmDownload }) => {
   const { state } = useLocation();
   const { isAdmin, userName } = state;
+  const [images, setImages] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchImages = async () => {
+      let result;
+      if (isAdmin) {
+        result = await getAllImages();
+      } else {
+        result = await getUserImages(userName);
+      }
+      setImages(result);
+      setLoading(false);
+    };
+
+    fetchImages();
+  }, [isAdmin, userName]);
+
   return (
     <>
       <Navbar userName={userName} />
@@ -25,6 +38,7 @@ const Images = ({ confirmDelete, confirmDownload }) => {
                 <p className="h3 float-end">
                   <Link
                     to={`/images/add`}
+                    state={{ isAdmin, userName }}
                     className="btn m-2"
                     style={{ backgroundColor: PINK }}
                   >
@@ -35,7 +49,7 @@ const Images = ({ confirmDelete, confirmDownload }) => {
                 <p className="h3 float-end">
                   <Link
                     to={`/users/add`}
-                    state={{isAdmin, userName}}
+                    state={{ isAdmin, userName }}
                     className="btn m-2"
                     style={{ backgroundColor: GREEN }}
                   >
@@ -47,7 +61,7 @@ const Images = ({ confirmDelete, confirmDownload }) => {
                 <p className="h3 float-end">
                   <Link
                     to={"/images"}
-                    state= {{isAdmin, userName}}
+                    state={{ isAdmin, userName }}
                     className="btn m-2"
                     style={{ backgroundColor: CYAN }}
                   >
@@ -58,7 +72,7 @@ const Images = ({ confirmDelete, confirmDownload }) => {
                 <p className="h3 float-end">
                   <Link
                     to={"/users"}
-                    state= {{isAdmin, userName}}
+                    state={{ isAdmin, userName }}
                     className="btn m-2"
                     style={{ backgroundColor: ORANGE }}
                   >
@@ -73,18 +87,29 @@ const Images = ({ confirmDelete, confirmDownload }) => {
           </div>
         </div>
       </section>
-      {false ? (
+      {loading ? (
         <Spinner />
       ) : (
         <section className="container">
           <div className="row">
-            {false ? (
-              <Image
-                confirmDelete={() => confirmDelete()}
-                confirmDownload={confirmDownload}
-                isAdmin={isAdmin}
-                userName={userName}
-              />
+            {images.length !== 0 ? (
+              images.map((i, key) => (
+                <Image
+                  key={key}
+                  imageId={i.imageId}
+                  imagePath={i.imagePath}
+                  userId={i.userId}
+                  userName={i.userName}
+                  LoggedUserName={userName}
+                  userPhone={i.userNumber}
+                  photographerName={i.photographerName}
+                  description={i.description}
+                  confirmDelete={confirmDelete}
+                  confirmDownload={confirmDownload}
+                  isAdmin={isAdmin}
+                  setImages={setImages}
+                />
+              ))
             ) : (
               <div
                 className="text-center py-5"
