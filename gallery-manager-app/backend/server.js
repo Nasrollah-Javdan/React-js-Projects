@@ -6,12 +6,26 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 const bcrypt = require("bcryptjs");
+const jwt = require('jsonwebtoken');
+
+const authenticateToken = (req, res, next) => {
+  const token = req.header('Authorization');
+  if (!token) return res.status(401).json({ message: 'Access denied' });
+
+  try {
+    const verified = jwt.verify(token, 'your_jwt_secret');
+    req.user = verified;
+    next();
+  } catch (err) {
+    res.status(400).json({ message: 'Invalid token' });
+  }
+};
 
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 const db = mysql.createConnection({
   host: "localhost",
@@ -30,38 +44,125 @@ db.connect((err) => {
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/');
+    cb(null, "uploads/");
   },
   filename: function (req, file, cb) {
-    cb(null, Date.now() + '-' + path.basename(file.originalname));
-  }
+    cb(null, Date.now() + "-" + path.basename(file.originalname));
+  },
 });
 
 const upload = multer({ storage: storage });
 
-app.post("/upload", upload.single('fileToUpload'), (req, res) => {
-  const { userId, userName, userNumber, photographerName, description } = req.body;
+app.post("/upload", upload.single("fileToUpload"), (req, res) => {
+  const { userId, userName, userNumber, photographerName, description } =
+    req.body;
   const imagePath = req.file.path.replace(/\\/g, "/");
 
-  const sql = "INSERT INTO images (imagePath, userId, userName, userNumber, photographerName, description) VALUES (?, ?, ?, ?, ?, ?)";
-  db.query(sql, [imagePath, userId, userName, userNumber, photographerName, description], (err, result) => {
+  const sql =
+    "INSERT INTO images (imagePath, userId, userName, userNumber, photographerName, description) VALUES (?, ?, ?, ?, ?, ?)";
+  db.query(
+    sql,
+    [imagePath, userId, userName, userNumber, photographerName, description],
+    (err, result) => {
+      if (err) {
+        return res.status(500).send(err);
+      }
+      res.json({ message: "Image uploaded and saved to database" });
+    }
+  );
+});
+
+app.get("/users", authenticateToken, (req, res) => {
+  const sql = "SELECT * FROM users";
+  db.query(sql, (err, results) => {
     if (err) {
       return res.status(500).send(err);
     }
-    res.json({ message: "Image uploaded and saved to database" });
+    res.json(results);
   });
 });
 
-app.get("/images", (req, res) => {
+app.get("/images", authenticateToken, (req, res) => {
   const sql = "SELECT * FROM images";
   db.query(sql, (err, results) => {
     if (err) {
       return res.status(500).send(err);
     }
-    results = results.map(result => {
+    results = results.map((result) => {
       result.imagePath = result.imagePath.replace(/\\/g, "/");
       return result;
     });
+    res.json(results);
+  });
+});
+
+app.get("/search-users", authenticateToken, (req, res) => {
+  const searchQuery = req.query.q;
+  const sql = "SELECT * FROM users WHERE userId LIKE ? OR userName LIKE ?";
+  db.query(sql, [`%${searchQuery}%`, `%${searchQuery}%`], (err, results) => {
+    if (err) {
+      return res.status(500).send(err);
+    }
+    res.json(results);
+  });
+});
+
+app.get("/users/:userId", authenticateToken, (req, res) => {
+  const userId = req.params.userId;
+  const sql = "SELECT * FROM users WHERE userId = ?";
+  db.query(sql, [userId], (err, result) => {
+    if (err) {
+      return res.status(500).send(err);
+    }
+    res.json(result[0]);
+  });
+});
+
+app.get("/lastUserId", authenticateToken, (req, res) => {
+  const sql =
+    "SELECT * FROM users WHERE userId = (SELECT MAX(userId) FROM users)";
+  db.query(sql, (err, result) => {
+    if (err) {
+      return res.status(500).send(err);
+    }
+    res.json(result);
+  });
+});
+
+app.get("/lastImageId", authenticateToken, (req, res) => {
+  const sql = "SELECT MAX(imageId) AS lastImageId FROM images";
+  db.query(sql, (err, result) => {
+    if (err) {
+      return res.status(500).send(err);
+    }
+    const lastImageId = result[0].lastImageId || 0;
+    res.json({ lastImageId });
+  });
+});
+
+app.get("/search-images", authenticateToken, (req, res) => {
+  const searchQuery = req.query.q;
+  const sql =
+    "SELECT * FROM images WHERE imageId LIKE ? OR userId LIKE ? OR userName LIKE ?";
+  db.query(
+    sql,
+    [`%${searchQuery}%`, `%${searchQuery}%`, `%${searchQuery}%`],
+    (err, results) => {
+      if (err) {
+        return res.status(500).send(err);
+      }
+      res.json(results);
+    }
+  );
+});
+
+app.get("/user-images", authenticateToken, (req, res) => {
+  const { userName } = req.query;
+  const sql = "SELECT * FROM images WHERE userName = ?";
+  db.query(sql, [userName], (err, results) => {
+    if (err) {
+      return res.status(500).send(err);
+    }
     res.json(results);
   });
 });
@@ -100,9 +201,10 @@ app.delete("/images/:imageId", (req, res) => {
   });
 });
 
-app.put("/images/:imageId", upload.single('photo'), (req, res) => {
+app.put("/images/:imageId", upload.single("photo"), (req, res) => {
   const { imageId } = req.params;
-  const { userId, userName, userNumber, photographerName, description } = req.body;
+  const { userId, userName, userNumber, photographerName, description } =
+    req.body;
   let imagePath = req.file ? req.file.path.replace(/\\/g, "/") : null;
 
   // اگر تصویری جدید آپلود نشده باشد، از مسیر تصویر قبلی استفاده می‌کنیم
@@ -119,36 +221,26 @@ app.put("/images/:imageId", upload.single('photo'), (req, res) => {
       imagePath = results[0].imagePath;
     }
 
-    const updateSql = "UPDATE images SET imagePath = ?, userId = ?, userName = ?, userNumber = ?, photographerName = ?, description = ? WHERE imageId = ?";
-    db.query(updateSql, [imagePath, userId, userName, userNumber, photographerName, description, imageId], (err, result) => {
-      if (err) {
-        return res.status(500).send(err);
+    const updateSql =
+      "UPDATE images SET imagePath = ?, userId = ?, userName = ?, userNumber = ?, photographerName = ?, description = ? WHERE imageId = ?";
+    db.query(
+      updateSql,
+      [
+        imagePath,
+        userId,
+        userName,
+        userNumber,
+        photographerName,
+        description,
+        imageId,
+      ],
+      (err, result) => {
+        if (err) {
+          return res.status(500).send(err);
+        }
+        res.json({ message: "Image details updated successfully" });
       }
-      res.json({ message: "Image details updated successfully" });
-    });
-  });
-});
-
-
-app.get("/search-users", (req, res) => {
-  const searchQuery = req.query.q;
-  const sql = "SELECT * FROM users WHERE userId LIKE ? OR userName LIKE ?";
-  db.query(sql, [`%${searchQuery}%`, `%${searchQuery}%`], (err, results) => {
-    if (err) {
-      return res.status(500).send(err);
-    }
-    res.json(results);
-  });
-});
-
-
-app.get("/users", (req, res) => {
-  const sql = "SELECT * FROM users";
-  db.query(sql, (err, results) => {
-    if (err) {
-      return res.status(500).send(err);
-    }
-    res.json(results);
+    );
   });
 });
 
@@ -166,7 +258,8 @@ app.delete("/users/:userId", (req, res) => {
 app.post("/users", async (req, res) => {
   const { userName, userNumber, userPassword } = req.body;
   const hashedPassword = await bcrypt.hash(userPassword, 10); // هش کردن رمز عبور
-  const sql = "INSERT INTO users (userName, userNumber, userPassword) VALUES (?, ?, ?)";
+  const sql =
+    "INSERT INTO users (userName, userNumber, userPassword) VALUES (?, ?, ?)";
   db.query(sql, [userName, userNumber, hashedPassword], (err, result) => {
     if (err) {
       return res.status(500).send(err);
@@ -175,78 +268,43 @@ app.post("/users", async (req, res) => {
   });
 });
 
-
 app.put("/users/:userId", async (req, res) => {
   const userId = req.params.userId;
   const { userName, userNumber, userPassword } = req.body;
   const hashedPassword = await bcrypt.hash(userPassword, 10); // هش کردن رمز عبور
-  const sql = "UPDATE users SET userName = ?, userNumber = ?, userPassword = ? WHERE userId = ?";
-  db.query(sql, [userName, userNumber, hashedPassword, userId], (err, result) => {
-    if (err) {
-      return res.status(500).send(err);
+  const sql =
+    "UPDATE users SET userName = ?, userNumber = ?, userPassword = ? WHERE userId = ?";
+  db.query(
+    sql,
+    [userName, userNumber, hashedPassword, userId],
+    (err, result) => {
+      if (err) {
+        return res.status(500).send(err);
+      }
+      res.json({ message: "User updated successfully" });
     }
-    res.json({ message: "User updated successfully" });
-  });
-});
-
-
-app.get("/users/:userId", (req, res) => {
-  const userId = req.params.userId;
-  const sql = "SELECT * FROM users WHERE userId = ?";
-  db.query(sql, [userId], (err, result) => {
-    if (err) {
-      return res.status(500).send(err);
-    }
-    res.json(result[0]); 
-  });
-});
-
-app.get("/lastUserId", (req, res) => {
-  const sql = "SELECT * FROM users WHERE userId = (SELECT MAX(userId) FROM users)";
-  db.query(sql, (err, result) => {
-    if (err) {
-      return res.status(500).send(err);
-    }
-    res.json(result); 
-  });
-});
-
-app.get("/lastImageId", (req, res) => {
-  const sql = "SELECT MAX(imageId) AS lastImageId FROM images";
-  db.query(sql, (err, result) => {
-    if (err) {
-      return res.status(500).send(err);
-    }
-    const lastImageId = result[0].lastImageId || 0; // در صورت عدم وجود عکس‌ها در دیتابیس، شناسه 0 در نظر گرفته می‌شود
-    res.json({ lastImageId });
-  });
-});
-
-
-app.get("/user-images", (req, res) => {
-  const { userName } = req.query;
-  const sql = "SELECT * FROM images WHERE userName = ?";
-  db.query(sql, [userName], (err, results) => {
-    if (err) {
-      return res.status(500).send(err);
-    }
-    res.json(results);
-  });
+  );
 });
 
 app.post("/login", async (req, res) => {
-  const { name, password } = req.body;
-  const sql = "SELECT * FROM users WHERE userName = ?";
-  db.query(sql, [name], async (err, results) => {
+  const { userId, password } = req.body;
+  const sql = "SELECT * FROM users WHERE userId = ?";
+  db.query(sql, [userId], async (err, results) => {
     if (err) {
       return res.status(500).send(err);
     }
     if (results.length > 0) {
       const user = results[0];
-      const isMatch = await bcrypt.compare(password, user.userPassword); // مقایسه رمز عبور با هش
+      const isMatch = await bcrypt.compare(password, user.userPassword);
       if (isMatch) {
+        const token = jwt.sign(
+          { id: user.userId, role: user.isAdmin ? "admin" : "user" },
+          "your_jwt_secret",
+          { expiresIn: "1h" }
+        );
         res.json({
           authenticated: true,
+          token,
           userName: user.userName,
           isAdmin: user.isAdmin,
         });
@@ -258,7 +316,6 @@ app.post("/login", async (req, res) => {
     }
   });
 });
-
 
 const PORT = 8081;
 app.listen(PORT, () => {
