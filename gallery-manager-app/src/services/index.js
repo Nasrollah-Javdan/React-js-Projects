@@ -1,8 +1,14 @@
 const SERVER_URL = "http://localhost:8081";
 
+const getToken = () => localStorage.getItem('token');
+
 export const getAllUsers = async () => {
   try {
-    const response = await fetch(`${SERVER_URL}/users`);
+    const response = await fetch(`${SERVER_URL}/users`, {
+      headers: {
+        'Authorization': getToken()
+      }
+    });
     if (!response.ok) {
       throw new Error("Network response was not ok");
     }
@@ -17,6 +23,9 @@ export const deleteUser = async (id) => {
   try {
     const response = await fetch(`${SERVER_URL}/users/${id}`, {
       method: "DELETE",
+      headers: {
+        'Authorization': getToken()
+      }
     });
     if (!response.ok) {
       throw new Error("Network response was not ok");
@@ -35,6 +44,7 @@ export const addUser = async (user) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        'Authorization': getToken()
       },
       body: JSON.stringify(user),
     });
@@ -54,6 +64,7 @@ export const editUser = async (id, user) => {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
+        'Authorization': getToken()
       },
       body: JSON.stringify(user),
     });
@@ -69,7 +80,11 @@ export const editUser = async (id, user) => {
 export const getUser = async (id) => {
   const url = `${SERVER_URL}/users/${id}`;
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': getToken()
+      }
+    });
     if (!response.ok) {
       throw new Error("Network response was not ok");
     }
@@ -81,7 +96,11 @@ export const getUser = async (id) => {
 
 export const getLastUserId = async () => {
   try {
-    const response = await fetch(`${SERVER_URL}/lastUserId`);
+    const response = await fetch(`${SERVER_URL}/lastUserId`, {
+      headers: {
+        'Authorization': getToken()
+      }
+    });
     if (!response.ok) {
       throw new Error("Network response was not ok");
     }
@@ -97,6 +116,9 @@ export const editImage = async (imageId, imageData) => {
   try {
     const response = await fetch(url, {
       method: "PUT",
+      headers: {
+        'Authorization': getToken()
+      },
       body: imageData,
     });
     if (!response.ok) {
@@ -108,10 +130,13 @@ export const editImage = async (imageId, imageData) => {
   }
 };
 
-
 export const getLastImageId = async () => {
   try {
-    const response = await fetch(`${SERVER_URL}/lastImageId`);
+    const response = await fetch(`${SERVER_URL}/lastImageId`, {
+      headers: {
+        'Authorization': getToken()
+      }
+    });
     if (!response.ok) {
       throw new Error("Network response was not ok");
     }
@@ -124,7 +149,11 @@ export const getLastImageId = async () => {
 
 export const getUserImages = async (userName) => {
   try {
-    const response = await fetch(`${SERVER_URL}/user-images?userName=${userName}`);
+    const response = await fetch(`${SERVER_URL}/user-images?userName=${userName}`, {
+      headers: {
+        'Authorization': getToken()
+      }
+    });
     if (!response.ok) {
       throw new Error("Network response was not ok");
     }
@@ -134,12 +163,13 @@ export const getUserImages = async (userName) => {
   }
 };
 
-
-
-
 export const getAllImages = async () => {
   try {
-    const response = await fetch(`${SERVER_URL}/images`);
+    const response = await fetch(`${SERVER_URL}/images`, {
+      headers: {
+        'Authorization': getToken()
+      }
+    });
     if (!response.ok) {
       throw new Error("Network response was not ok");
     }
@@ -150,13 +180,14 @@ export const getAllImages = async () => {
   }
 };
 
-
-
 export const uploadImage = async (imageData) => {
   const url = `${SERVER_URL}/upload`;
   try {
     const response = await fetch(url, {
       method: "POST",
+      headers: {
+        'Authorization': getToken()
+      },
       body: imageData,
     });
     if (!response.ok) {
@@ -168,11 +199,13 @@ export const uploadImage = async (imageData) => {
   }
 };
 
-
 export const deleteImage = async (imageId) => {
   try {
     const response = await fetch(`${SERVER_URL}/images/${imageId}`, {
       method: "DELETE",
+      headers: {
+        'Authorization': getToken()
+      }
     });
     if (!response.ok) {
       throw new Error("Network response was not ok");
@@ -186,7 +219,11 @@ export const deleteImage = async (imageId) => {
 
 export const searchUsers = async (query) => {
   try {
-    const response = await fetch(`http://localhost:8081/search-users?q=${query}`);
+    const response = await fetch(`http://localhost:8081/search-users?q=${query}`, {
+      headers: {
+        'Authorization': getToken()
+      }
+    });
     if (!response.ok) {
       throw new Error("Network response was not ok");
     }
@@ -197,6 +234,19 @@ export const searchUsers = async (query) => {
   }
 };
 
-
-
-
+export const searchImages = async (query) => {
+  try {
+    const response = await fetch(`http://localhost:8081/search-images?q=${query}`, {
+      headers: {
+        'Authorization': getToken()
+      }
+    });
+    if (!response.ok) {
+      throw new Error("Network response was not ok");
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Search error:", error);
+  }
+};

@@ -1,16 +1,19 @@
 import { Link, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { getAllImages, getUserImages } from "../../services";
+import { getAllImages, getUserImages, searchImages } from "../../services";
 import Image from "../images/Image";
 import Spinner from "../Spinner";
 import { CURRENTLINE, CYAN, GREEN, ORANGE, PINK } from "../../helpers/colors";
 import Navbar from "../Navbar";
+import SearchBox from "../SearchBox"; // مسیر درست برای وارد کردن
 
 const Images = ({ confirmDelete, confirmDownload }) => {
   const { state } = useLocation();
   const { isAdmin, userName } = state;
   const [images, setImages] = useState([]);
+  const [filteredImages, setFilteredImages] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     const fetchImages = async () => {
@@ -21,11 +24,30 @@ const Images = ({ confirmDelete, confirmDownload }) => {
         result = await getUserImages(userName);
       }
       setImages(result);
+      setFilteredImages(result);
       setLoading(false);
     };
 
     fetchImages();
   }, [isAdmin, userName]);
+
+  useEffect(() => {
+    const fetchSearchResults = async () => {
+      if (searchTerm) {
+        const result = await searchImages(searchTerm);
+        setFilteredImages(result);
+      } else {
+        setFilteredImages(images);
+      }
+    };
+    fetchSearchResults();
+  }, [searchTerm, images]);
+
+  const handleSearch = (term) => {
+    setSearchTerm(term);
+  };
+
+  console.log(isAdmin, userName);
 
   return (
     <>
@@ -91,9 +113,12 @@ const Images = ({ confirmDelete, confirmDownload }) => {
         <Spinner />
       ) : (
         <section className="container">
-          <div className="row">
-            {images.length !== 0 ? (
-              images.map((i, key) => (
+          <div className="row d-flex align-items-center">
+            <SearchBox onSearch={handleSearch} />
+          </div>
+          <div className="row d-flex align-items-center">
+            {filteredImages.length !== 0 ? (
+              filteredImages.map((i, key) => (
                 <Image
                   key={key}
                   imageId={i.imageId}

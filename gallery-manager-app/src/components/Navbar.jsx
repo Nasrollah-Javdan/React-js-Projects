@@ -1,6 +1,6 @@
-import { Link, useLocation, useParams } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
-import SearchImage from "./images/SearchImage";
+import SearchBox from "./SearchBox";
 
 import { BACKGROUND, GREEN, PURPLE, RED } from "../helpers/colors";
 
@@ -13,8 +13,8 @@ const Navbar = ({ userName }) => {
       style={{ backgroundColor: BACKGROUND }}
     >
       <div className="container">
-        <div className="row w-100 d-flex align-items-center justify-content-center">
-          <div className="col d-flex align-items-center justify-content-center gap-3">
+        <div className="w-100 d-flex align-items-center" style={{justifyContent: userName ? "space-between" : "center"}}>
+          <div className="d-flex align-items-center justify-content-center gap-3">
             <div className="navbar-brand">
               وب اپلیکیشن {"  "}
               <span style={{ color: PURPLE }}>عکاسی من</span>{" "}
@@ -32,9 +32,9 @@ const Navbar = ({ userName }) => {
               </p>
             ) : null}
           </div>
-          {location.pathname === `/images` || location.pathname === `/users` ? (
-            <div className="col d-flex align-items-center justify-content-center">
-              <SearchImage />
+
+          {userName ? (
+            <div>
               <p className="h3 m-0">
                 <Link
                   to={`/`}

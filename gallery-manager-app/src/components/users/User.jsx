@@ -13,8 +13,6 @@ import { confirmAlert } from "react-confirm-alert";
 import { deleteUser, getAllUsers } from "../../services";
 
 const User = ({ id, name, phone, setData, isAdmin, userName }) => {
-  console.log(id);
-
   const confirmDelete = (id) => {
     confirmAlert({
       customUI: ({ onClose }) => {
@@ -56,12 +54,12 @@ const User = ({ id, name, phone, setData, isAdmin, userName }) => {
   };
 
   return (
-    <div className="col-md-4 my-1">
-      <div style={{ backgroundColor: CURRENTLINE }} className="card">
-        <div className="card-body d-flex p-2">
-          <div style={{justifyContent: "center"}} className="row align-items-center d-flex justify-content-center">
-            <div className="col-10" style={{width: "90%"}}>
-              <ul className="list-group p-0 mx-1">
+    <div  className="col-md-4 my-1">
+      <div style={{ width: "", backgroundColor: CURRENTLINE }} className="card">
+        <div style={{height: "170px"}} className="card-body p-2 d-flex  align-items-center">
+          <div className="row mx-auto">
+            <div style={{width: "80%", padding: "0"}} >
+              <ul className="list-group p-0 mx-1" style={{width: "250px"}}>
                 <li className="list-group-item list-group-item-dark">
                   شناسه مشتری : {"  "}
                   <span className="fw-bold">{id}</span>
@@ -76,12 +74,12 @@ const User = ({ id, name, phone, setData, isAdmin, userName }) => {
                 </li>
               </ul>
             </div>
-            <div style={{width: "5%"}} className="col-2 col-sm-2 d-flex flex-column align-items-center">
-              {isAdmin ? (
+            <div style={{width: "20%", padding: "0"}} className="my-auto">
+              {isAdmin && (
                 <>
                   <Link
                     to={`/users/edit`}
-                    state={{id, userName, isAdmin}}
+                    state={{ id, userName, isAdmin }}
                     className="btn my-1"
                     style={{ backgroundColor: CYAN }}
                   >
@@ -95,7 +93,7 @@ const User = ({ id, name, phone, setData, isAdmin, userName }) => {
                     <i className="fa fa-trash" />
                   </button>
                 </>
-              ) : null}
+              )}
             </div>
           </div>
         </div>

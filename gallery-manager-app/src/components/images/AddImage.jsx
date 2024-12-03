@@ -22,6 +22,7 @@ const AddImage = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newImageId, setNewImageId] = useState(null);
+  const [uploadedImage, setUploadedImage] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -59,7 +60,12 @@ const AddImage = () => {
   };
 
   const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
+    const file = e.target.files[0];
+    setFile(file);
+
+    // Set uploaded image URL to show the uploaded image
+    const imageUrl = URL.createObjectURL(file);
+    setUploadedImage(imageUrl);
   };
 
   const createImage = async (e) => {
@@ -98,16 +104,16 @@ const AddImage = () => {
         <Spinner />
       ) : (
         <>
-          <section className="p-3">
+          <section className="p-2">
             <img
-              src={require("../../assets/man-taking-note.png")}
+              src={uploadedImage || require("../../assets/man-taking-note.png")}
               height="400px"
               style={{
                 position: "absolute",
                 zIndex: "-1",
                 top: "130px",
-                left: "100px",
-                opacity: "50%",
+                left: uploadedImage ? "300px" : "100px",
+
               }}
             />
             <div className="container">

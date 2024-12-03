@@ -1,11 +1,32 @@
 import { Link } from "react-router-dom";
-import { confirmAlert } from "react-confirm-alert"; // Importing confirm alert
-import "react-confirm-alert/src/react-confirm-alert.css"; // Importing confirm alert CSS
-import { CURRENTLINE, CYAN, GREEN, ORANGE, PURPLE, RED, YELLOW, FOREGROUND, COMMENT } from "../../helpers/colors";
-import { deleteImage, getAllImages } from "../../services/index"; // Import your deleteImage and getAllImages functions
+import { confirmAlert } from "react-confirm-alert";
+import "react-confirm-alert/src/react-confirm-alert.css";
+import {
+  CURRENTLINE,
+  CYAN,
+  GREEN,
+  ORANGE,
+  PURPLE,
+  RED,
+  YELLOW,
+  FOREGROUND,
+  COMMENT
+} from "../../helpers/colors";
+import { deleteImage, getAllImages } from "../../services/index";
 
-const Image = ({ photographerName, description, LoggedUserName, setImages, imageId, imagePath, userId, userName: Name, userPhone, confirmDownload, isAdmin }) => {
-
+const Image = ({
+  photographerName,
+  description,
+  LoggedUserName,
+  setImages,
+  imageId,
+  imagePath,
+  userId,
+  userName: Name,
+  userPhone,
+  confirmDownload,
+  isAdmin
+}) => {
   const confirmDelete = (imageId) => {
     confirmAlert({
       customUI: ({ onClose }) => {
@@ -15,7 +36,7 @@ const Image = ({ photographerName, description, LoggedUserName, setImages, image
             style={{
               backgroundColor: CURRENTLINE,
               border: `1px solid ${PURPLE}`,
-              borderRadius: "1em",
+              borderRadius: "1em"
             }}
             className="p-4"
           >
@@ -42,16 +63,16 @@ const Image = ({ photographerName, description, LoggedUserName, setImages, image
             </button>
           </div>
         );
-      },
+      }
     });
   };
 
   return (
-    <div className="col-md-6">
-      <div style={{ backgroundColor: CURRENTLINE }} className="card">
-        <div className="card-body d-flex justify-content-center">
-          <div className="row align-items-center d-flex justify-content-center">
-            <div className="col-md-4 col-sm-5 p-0">
+    <div className="col-md-6 mb-2">
+      <div style={{ backgroundColor: CURRENTLINE }} className="card h-100">
+        <div className="card-body p-2 d-flex align-items-center" style={{height: "220px"}}>
+          <div className="row mx-auto">
+            <div className="col-md-4 col-sm-5 p-0 my-auto">
               <img
                 src={`http://localhost:8081/${imagePath}`}
                 alt=""
@@ -59,7 +80,7 @@ const Image = ({ photographerName, description, LoggedUserName, setImages, image
                 className="img-fluid rounded"
               />
             </div>
-            <div className="col-md-6 col-sm-6 p-0 mx-2">
+            <div className="col-md-6 col-sm-6 p-0 mx-2 my-auto">
               <ul className="list-group p-0">
                 <li className="list-group-item list-group-item-dark">
                   شناسه عکس :{"  "}
@@ -82,10 +103,20 @@ const Image = ({ photographerName, description, LoggedUserName, setImages, image
                 </li>
               </ul>
             </div>
-            <div className="col-md-1 col-sm-1 d-flex flex-column align-items-center ">
+            <div className="col-md-1 col-sm-1 d-flex flex-column align-items-center mx-auto my-auto">
               <Link
                 to={`/image/imageInfo`}
-                state={{photographerName, description, LoggedUserName, imageId, imagePath, userId, Name, userPhone, isAdmin}}
+                state={{
+                  photographerName,
+                  description,
+                  LoggedUserName,
+                  imageId,
+                  imagePath,
+                  userId,
+                  Name,
+                  userPhone,
+                  isAdmin
+                }}
                 className="btn my-1"
                 style={{ backgroundColor: ORANGE }}
               >
@@ -96,7 +127,17 @@ const Image = ({ photographerName, description, LoggedUserName, setImages, image
                 <>
                   <Link
                     to={`/image/edit`}
-                    state={{photographerName, description, LoggedUserName, imageId, imagePath, userId, Name, userPhone, isAdmin}}
+                    state={{
+                      photographerName,
+                      description,
+                      LoggedUserName,
+                      imageId,
+                      imagePath,
+                      userId,
+                      Name,
+                      userPhone,
+                      isAdmin
+                    }}
                     className="btn my-1"
                     style={{ backgroundColor: CYAN }}
                   >

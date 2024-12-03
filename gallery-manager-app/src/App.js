@@ -1,4 +1,4 @@
-import { Route, Routes, useLocation } from "react-router-dom";
+import { Route, Routes, useLocation, Navigate } from "react-router-dom";
 import { confirmAlert } from "react-confirm-alert";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
@@ -189,6 +189,7 @@ const App = () => {
         />
         <Route path="/users/add" element={<AddUser />} />
         <Route path="/users/edit" element={<EditUser />} />
+        <Route path="*" element={<Navigate to="/" replace />} /> {/* اضافه کردن Route برای هدایت به صفحه اصلی */}
       </Routes>
     </div>
   );

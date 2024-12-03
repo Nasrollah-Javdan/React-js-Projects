@@ -1,39 +1,45 @@
 import { Link, useLocation } from "react-router-dom";
-
+import { useState, useEffect } from "react";
+import { getAllUsers, searchUsers } from "../../services";
 import Spinner from "../Spinner";
-import {
-  CURRENTLINE,
-  CYAN,
-  GREEN,
-  ORANGE,
-  PINK,
-  RED,
-} from "../../helpers/colors";
-import User from "./User";
-import { useEffect, useState } from "react";
-import { getAllUsers } from "../../services";
 import Navbar from "../Navbar";
+import User from "./User";
+import SearchBox from "../SearchBox"; 
+import { CURRENTLINE, CYAN, GREEN, ORANGE, PINK } from "../../helpers/colors";
 
 const Users = ({ confirmDelete }) => {
-
-
-  const {state} = useLocation();
-
+  const { state } = useLocation();
   const { isAdmin, userName } = state;
-
-  // console.log(isAdmin, userName)
-
   const [data, setData] = useState([]);
+  const [filteredData, setFilteredData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
       const result = await getAllUsers();
       setData(result);
+      setFilteredData(result);
+      setLoading(false);
     };
     fetchData();
   }, []);
 
-  // console.log(data);
+  useEffect(() => {
+    const fetchSearchResults = async () => {
+      if (searchTerm) {
+        const result = await searchUsers(searchTerm);
+        setFilteredData(result);
+      } else {
+        setFilteredData(data);
+      }
+    };
+    fetchSearchResults();
+  }, [searchTerm, data]);
+
+  const handleSearch = (term) => {
+    setSearchTerm(term);
+  };
 
   return (
     <>
@@ -46,7 +52,7 @@ const Users = ({ confirmDelete }) => {
                 <p className="h3 float-end">
                   <Link
                     to={`/images/add`}
-                    state={{isAdmin, userName}}
+                    state={{ isAdmin, userName }}
                     className="btn m-2"
                     style={{ backgroundColor: PINK }}
                   >
@@ -57,7 +63,7 @@ const Users = ({ confirmDelete }) => {
                 <p className="h3 float-end">
                   <Link
                     to={`/users/add`}
-                    state={{isAdmin, userName}}
+                    state={{ isAdmin, userName }}
                     className="btn m-2"
                     style={{ backgroundColor: GREEN }}
                   >
@@ -68,7 +74,7 @@ const Users = ({ confirmDelete }) => {
                 <p className="h3 float-end">
                   <Link
                     to={"/images"}
-                    state= {{isAdmin, userName}}
+                    state={{ isAdmin, userName }}
                     className="btn m-2"
                     style={{ backgroundColor: CYAN }}
                   >
@@ -79,7 +85,7 @@ const Users = ({ confirmDelete }) => {
                 <p className="h3 float-end">
                   <Link
                     to={"/users"}
-                    state= {{isAdmin, userName}}
+                    state={{ isAdmin, userName }}
                     className="btn m-2"
                     style={{ backgroundColor: ORANGE }}
                   >
@@ -92,13 +98,16 @@ const Users = ({ confirmDelete }) => {
           </div>
         </div>
       </section>
-      {false ? (
+      {loading ? (
         <Spinner />
       ) : (
         <section className="container">
           <div className="row">
-            {data.length !== 0 ? (
-              data.map((d, key) => (
+            <SearchBox onSearch={handleSearch} />
+          </div>
+          <div className="row">
+            {filteredData.length !== 0 ? (
+              filteredData.map((d, key) => (
                 <User
                   confirmDelete={() => confirmDelete()}
                   key={key}
@@ -117,7 +126,7 @@ const Users = ({ confirmDelete }) => {
                 style={{ backgroundColor: CURRENTLINE }}
               >
                 <p className="h3" style={{ color: ORANGE }}>
-                  عکسی یافت نشد ...
+                  کاربری یافت نشد ...
                 </p>
                 <img
                   src={require("../../assets/no-found.gif")}
