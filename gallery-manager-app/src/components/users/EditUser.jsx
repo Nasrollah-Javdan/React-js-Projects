@@ -5,6 +5,8 @@ import { COMMENT, ORANGE, PURPLE } from "../../helpers/colors";
 import { editUser, getUser } from "../../services";
 import { useFormik } from "formik";
 import * as Yup from "yup";
+import { FaEye, FaEyeSlash } from "react-icons/fa"; 
+import bcrypt from 'bcryptjs'; 
 
 const EditUser = () => {
   const location = useLocation();
@@ -17,6 +19,8 @@ const EditUser = () => {
     userPassword: "",
     confirmPassword: "",
   });
+  
+  const [showPassword, setShowPassword] = useState(false); // State for password visibility
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -24,8 +28,8 @@ const EditUser = () => {
       setUser({
         userName: result.userName,
         userNumber: result.userNumber,
-        userPassword: result.userPassword,
-        confirmPassword: result.userPassword,
+        userPassword: "",
+        confirmPassword: "",
       });
     };
     fetchUser();
@@ -35,8 +39,8 @@ const EditUser = () => {
     initialValues: {
       userName: user.userName,
       userNumber: user.userNumber,
-      userPassword: user.userPassword,
-      confirmPassword: user.confirmPassword,
+      userPassword: "",
+      confirmPassword: "",
     },
     enableReinitialize: true,
     validationSchema: Yup.object({
@@ -47,26 +51,44 @@ const EditUser = () => {
         .required("شماره همراه اجباری است")
         .matches(/^[0-9]+$/, "فقط اعداد مجاز است"),
       userPassword: Yup.string()
-        .required("رمز عبور اجباری است")
         .min(8, "رمز عبور باید حداقل 8 کاراکتر باشد"),
       confirmPassword: Yup.string()
         .oneOf([Yup.ref("userPassword"), null], "رمز عبور مطابقت ندارد")
-        .required("تکرار رمز عبور اجباری است"),
     }),
     onSubmit: async (values) => {
       try {
-        const updatedUser = {
+        let updatedUser = {
           userName: values.userName,
           userNumber: values.userNumber,
-          userPassword: values.userPassword,
         };
+        
+        if (values.userPassword) {
+          const hashedPassword = await bcrypt.hash(values.userPassword, 10); // Hashing the password if it's provided
+          updatedUser.userPassword = hashedPassword;
+        }
+
         await editUser(userId, updatedUser);
+        alert("اطلاعات کاربر با موفقیت ویرایش شد");
         navigate(`/users`, { state: { userName, isAdmin } });
       } catch (error) {
         alert("نام کاربری یا شماره همراه وارد شده قبلا ثبت شده است");
       }
     },
   });
+
+  const generatePassword = () => {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let password = '';
+    for (let i = 0; i < 10; i++) {
+      password += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    formik.setFieldValue('userPassword', password);
+    formik.setFieldValue('confirmPassword', password);
+  };
+
+  const toggleShowPassword = () => {
+    setShowPassword(!showPassword);
+  };
 
   return (
     <>
@@ -125,18 +147,25 @@ const EditUser = () => {
                       ) : null}
                     </div>
                     <div className="mb-2">
-                      <input
-                        name="userPassword"
-                        type="password"
-                        className="form-control"
-                        value={formik.values.userPassword}
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        required
-                        placeholder="رمز"
-                      />
-                      {formik.touched.userPassword &&
-                      formik.errors.userPassword ? (
+                      <div className="input-group">
+                        <input
+                          name="userPassword"
+                          type={showPassword ? "text" : "password"}
+                          className="form-control"
+                          value={formik.values.userPassword}
+                          onChange={formik.handleChange}
+                          onBlur={formik.handleBlur}
+                          placeholder="رمز"
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-outline-secondary rounded"
+                          onClick={toggleShowPassword}
+                        >
+                          {showPassword ? <FaEyeSlash /> : <FaEye />}
+                        </button>
+                      </div>
+                      {formik.touched.userPassword && formik.errors.userPassword ? (
                         <div className="text-danger">
                           {formik.errors.userPassword}
                         </div>
@@ -145,20 +174,28 @@ const EditUser = () => {
                     <div className="mb-2">
                       <input
                         name="confirmPassword"
-                        type="password"
+                        type={showPassword ? "text" : "password"}
                         className="form-control"
                         value={formik.values.confirmPassword}
                         onChange={formik.handleChange}
                         onBlur={formik.handleBlur}
-                        required
                         placeholder="تکرار رمز"
                       />
-                      {formik.touched.confirmPassword &&
-                      formik.errors.confirmPassword ? (
+                      {formik.touched.confirmPassword && formik.errors.confirmPassword ? (
                         <div className="text-danger">
                           {formik.errors.confirmPassword}
                         </div>
                       ) : null}
+                    </div>
+                    <div className="mb-2 d-flex justify-content-end">
+                      <button
+                        type="button"
+                        className="btn btn-outline-primary"
+                        onClick={generatePassword}
+                        style={{margin: "0 auto"}}
+                      >
+                        تولید رمز عبور
+                      </button>
                     </div>
                     <div className="mb-2">
                       <input

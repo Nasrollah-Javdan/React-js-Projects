@@ -1,6 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
 
-import { Spinner } from "..";
 import { CURRENTLINE, CYAN, PURPLE } from "../../helpers/colors";
 
 const ViewImage = () => {
@@ -79,7 +78,7 @@ const ViewImage = () => {
                   className="btn"
                   style={{ backgroundColor: PURPLE }}
                 >
-                  برگشت به گالری
+                  برگشت به نگارخانه
                 </Link>
               </div>
             </div>

@@ -1,7 +1,6 @@
 import { Route, Routes, useLocation, Navigate } from "react-router-dom";
 import { confirmAlert } from "react-confirm-alert";
 import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 
@@ -28,6 +27,7 @@ import {
 import AddUser from "./components/users/AddUser";
 import Users from "./components/users/Users";
 import EditUser from "./components/users/EditUser";
+import ForgetPass from "./components/ForgetPass";
 
 const App = () => {
   const location = useLocation();
@@ -72,7 +72,7 @@ const App = () => {
     };
 
     img.onerror = () => {
-      alert("خطا در بارگذاری تصویر");
+      alert("خطا در دانلود تصویر");
     };
   };
 
@@ -189,7 +189,8 @@ const App = () => {
         />
         <Route path="/users/add" element={<AddUser />} />
         <Route path="/users/edit" element={<EditUser />} />
-        <Route path="*" element={<Navigate to="/" replace />} /> {/* اضافه کردن Route برای هدایت به صفحه اصلی */}
+        <Route path="/forgetPass" element={<ForgetPass />} />
+        <Route path="*" element={<Navigate to="/" replace />} /> 
       </Routes>
     </div>
   );

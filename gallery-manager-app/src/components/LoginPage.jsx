@@ -1,46 +1,52 @@
-import { useNavigate } from 'react-router-dom';
-import { useFormik } from 'formik';
-import * as Yup from 'yup';
-import axios from 'axios';
-import { GREEN, RED } from '../helpers/colors';
+import { Link, useNavigate } from "react-router-dom";
+import { useFormik } from "formik";
+import * as Yup from "yup";
+import axios from "axios";
+import { GREEN, RED } from "../helpers/colors";
 
 const LoginPage = () => {
   const navigate = useNavigate();
 
   const validationSchema = Yup.object({
     userId: Yup.string()
-      .required('شناسه مشتری اجباری است')
+      .required("شناسه مشتری اجباری است")
       .matches(/^[0-9]+$/, "فقط اعداد مجاز است"),
     password: Yup.string()
-      .required('رمز عبور اجباری است')
-      .min(8, 'رمز عبور باید حداقل 8 کاراکتر باشد'),
+      .required("رمز عبور اجباری است")
+      .min(8, "رمز عبور باید حداقل 8 کاراکتر باشد"),
   });
 
   const formik = useFormik({
     initialValues: {
-      userId: '',
-      password: '',
+      userId: "",
+      password: "",
     },
     validationSchema: validationSchema,
     onSubmit: async (values) => {
       try {
-        const response = await axios.post('http://localhost:8081/login', values);
+        const response = await axios.post("http://localhost:8081/login", values);
         if (response.data.authenticated) {
-          localStorage.setItem('token', response.data.token); // Store token after login
-          navigate('/images', { state: { isAdmin: response.data.isAdmin, userName: response.data.userName } });
-        } else {
-          alert('شناسه مشتری یا رمز عبور اشتباه است. لطفا مقادیر صحیح را وارد نمایید.');
+          // ذخیره توکن به عنوان کوکی
+          document.cookie = `token=${response.data.token};path=/`; // Remove HttpOnly
+          navigate("/images");
         }
       } catch (error) {
-        alert('مشکلی پیش آمده است. لطفا با پشتیبانی تماس بگیرید.');
+        if (error.response && error.response.status === 401) {
+          alert("شناسه مشتری یا رمز عبور اشتباه است. لطفا مقادیر صحیح را وارد نمایید.");
+        } else {
+          alert("مشکلی پیش آمده است. لطفا با پشتیبانی تماس بگیرید.");
+        }
       }
     },
   });
+  
 
   return (
     <form className="container w-25 mt-5 p-5 rounded list-group-item-dark" onSubmit={formik.handleSubmit}>
       <div className="mb-3">
-        <label htmlFor="userId" className="form-label fw-bold">شناسه مشتری</label>
+        <label htmlFor="userId" className="form-label fw-bold">
+          شناسه مشتری
+        </label>
         <input
           name="userId"
           type="text"
@@ -56,7 +62,9 @@ const LoginPage = () => {
         ) : null}
       </div>
       <div className="mb-3">
-        <label htmlFor="userPass" className="form-label fw-bold">رمز</label>
+        <label htmlFor="userPass" className="form-label fw-bold">
+          رمز
+        </label>
         <input
           name="password"
           type="password"
@@ -70,9 +78,9 @@ const LoginPage = () => {
           <div className="text-danger">{formik.errors.password}</div>
         ) : null}
       </div>
-      <button type="" className="btn fw-bold mx-2" style={{ backgroundColor: RED }}>
-        فراموشی رمز 
-      </button>
+      <Link to={`/forgetPass`} className="btn fw-bold mx-2" style={{ backgroundColor: RED }}>
+        فراموشی رمز <i className="fas fa-unlock-alt"></i>
+      </Link>
       <button type="submit" className="btn fw-bold" style={{ backgroundColor: GREEN }}>
         ورود <i className="fas fa-sign-in-alt"></i>
       </button>

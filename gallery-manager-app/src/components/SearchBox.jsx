@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { PURPLE } from "../helpers/colors";
 
 const SearchBox = ({ onSearch }) => {
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [timer, setTimer] = useState(null);
 
@@ -32,7 +33,7 @@ const SearchBox = ({ onSearch }) => {
         className="input-group-text"
         id="basic-addon1"
         style={{ backgroundColor: PURPLE, cursor: "pointer" }}
-        onClick={handleSearchClick} // اضافه کردن کلیک برای جستجو
+        onClick={handleSearchClick} 
       >
         <i className="fas fa-search" />
       </span>

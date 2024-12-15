@@ -1,13 +1,12 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { getAllUsers, searchUsers, getLastImageId } from "../../services/index";
 import { Spinner } from "..";
 import { COMMENT, GREEN, PURPLE } from "../../helpers/colors";
+import { jwtDecode } from "jwt-decode"; // Correct default import
 
 const AddImage = () => {
-  const { state } = useLocation();
-  const { isAdmin, userName } = state;
   const navigate = useNavigate();
 
   const [file, setFile] = useState(null);
@@ -23,6 +22,28 @@ const AddImage = () => {
   const [loading, setLoading] = useState(true);
   const [newImageId, setNewImageId] = useState(null);
   const [uploadedImage, setUploadedImage] = useState("");
+  const [userInfo, setUserInfo] = useState(null); // Initialize as null
+
+  useEffect(() => {
+    const token = document.cookie
+      .split("; ")
+      .find(row => row.startsWith("token="))
+      ?.split("=")[1];
+
+    if (token) {
+      try {
+        const decodedToken = jwtDecode(token); // Correct default import usage
+        setUserInfo({
+          isAdmin: decodedToken.role === "admin" ? 1 : 0, // Ensure boolean
+          userName: decodedToken.userName
+        });
+      } catch (error) {
+        console.error("Error decoding token:", error);
+      }
+    } else {
+      console.error("No token found in cookies.");
+    }
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -63,7 +84,6 @@ const AddImage = () => {
     const file = e.target.files[0];
     setFile(file);
 
-    // Set uploaded image URL to show the uploaded image
     const imageUrl = URL.createObjectURL(file);
     setUploadedImage(imageUrl);
   };
@@ -90,11 +110,11 @@ const AddImage = () => {
 
     try {
       await axios.post("http://localhost:8081/upload", data);
-      alert("Image uploaded successfully");
-      navigate("/images", { state: { userName, isAdmin } });
+      alert("عکس با موفقیت بارگزاری شد");
+      navigate("/images");
     } catch (err) {
       console.error(err);
-      alert("Error uploading image");
+      alert(" خطایی در هنگام بارگزاری رخ داد . لطفا دوباره تلاش کنید");
     }
   };
 
@@ -113,7 +133,6 @@ const AddImage = () => {
                 zIndex: "-1",
                 top: "130px",
                 left: uploadedImage ? "300px" : "100px",
-
               }}
             />
             <div className="container">
@@ -233,7 +252,6 @@ const AddImage = () => {
                       />
                       <Link
                         to={`/images`}
-                        state={{ isAdmin, userName }}
                         className="btn mx-2"
                         style={{ backgroundColor: COMMENT }}
                       >
@@ -251,4 +269,4 @@ const AddImage = () => {
   );
 };
 
-export default AddImage;
+export default AddImage

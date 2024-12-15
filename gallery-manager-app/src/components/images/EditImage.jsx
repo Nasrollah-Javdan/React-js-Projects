@@ -3,7 +3,6 @@ import { Spinner } from "..";
 import { COMMENT, ORANGE, PURPLE } from "../../helpers/colors";
 import { useState, useEffect } from "react";
 import { getAllUsers, editImage } from "../../services";
-import axios from "axios";
 
 const EditImage = () => {
   const location = useLocation();

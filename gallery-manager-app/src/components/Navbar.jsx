@@ -1,11 +1,14 @@
-import { Link, useLocation } from "react-router-dom";
-
-import SearchBox from "./SearchBox";
-
+import { Link, useNavigate } from "react-router-dom";
 import { BACKGROUND, GREEN, PURPLE, RED } from "../helpers/colors";
 
 const Navbar = ({ userName }) => {
-  const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    // حذف کوکی توکن
+    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    navigate("/");
+  };
 
   return (
     <nav
@@ -36,14 +39,14 @@ const Navbar = ({ userName }) => {
           {userName ? (
             <div>
               <p className="h3 m-0">
-                <Link
-                  to={`/`}
+                <button
+                  onClick={handleLogout}
                   className="btn m-2"
                   style={{ backgroundColor: RED }}
                 >
                   خروج
                   <i className="fas fa-door-open mx-2" />
-                </Link>
+                </button>
               </p>
             </div>
           ) : null}
