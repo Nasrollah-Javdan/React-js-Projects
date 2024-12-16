@@ -13,20 +13,43 @@ import {
   COMMENT
 } from "../../helpers/colors";
 import { deleteImage, getAllImages } from "../../services/index";
+import { jwtDecode } from "jwt-decode";
+import { useEffect, useState } from "react";
 
 const Image = ({
   photographerName,
   description,
-  LoggedUserName,
   setImages,
   imageId,
   imagePath,
   userId,
-  userName: Name,
+  userName,
   userPhone,
   confirmDownload,
-  isAdmin
 }) => {
+
+  const [userInfo, setUserInfo] = useState(null);
+
+  useEffect(() => {
+    const token = document.cookie
+      .split("; ")
+      .find(row => row.startsWith("token="))
+      ?.split("=")[1];
+
+    if (token) {
+      try {
+        const decodedToken = jwtDecode(token); // Correct named import usage
+        setUserInfo({
+          isAdmin: decodedToken.role === "admin" ? 1 : 0, // Ensure boolean
+        });
+      } catch (error) {
+        console.error("Error decoding token:", error);
+      }
+    } else {
+      console.error("No token found in cookies.");
+    }
+  }, []);
+
   const confirmDelete = (imageId) => {
     confirmAlert({
       customUI: ({ onClose }) => {
@@ -94,7 +117,7 @@ const Image = ({
 
                 <li className="list-group-item list-group-item-dark">
                   نام و نام خانوادگی :{"  "}
-                  <span className="fw-bold">{Name}</span>
+                  <span className="fw-bold">{userName}</span>
                 </li>
 
                 <li className="list-group-item list-group-item-dark">
@@ -109,13 +132,11 @@ const Image = ({
                 state={{
                   photographerName,
                   description,
-                  LoggedUserName,
                   imageId,
                   imagePath,
                   userId,
-                  Name,
+                  userName,
                   userPhone,
-                  isAdmin
                 }}
                 className="btn my-1"
                 style={{ backgroundColor: ORANGE }}
@@ -123,20 +144,18 @@ const Image = ({
                 <i className="fa fa-eye" />
               </Link>
 
-              {isAdmin ? (
+              {userInfo?.isAdmin ? (
                 <>
                   <Link
                     to={`/image/edit`}
                     state={{
                       photographerName,
                       description,
-                      LoggedUserName,
                       imageId,
                       imagePath,
                       userId,
-                      Name,
-                      userPhone,
-                      isAdmin
+                      userName,
+                      userPhone
                     }}
                     className="btn my-1"
                     style={{ backgroundColor: CYAN }}

@@ -6,11 +6,19 @@ import { getAllUsers, editImage } from "../../services";
 
 const EditImage = () => {
   const location = useLocation();
-  const { photographerName, description, LoggedUserName: userName, imageId, imagePath, userId, Name, userPhone, isAdmin } = location.state;
+  const {
+    photographerName,
+    description,
+    imageId,
+    imagePath,
+    userId,
+    userName,
+    userPhone,
+  } = location.state;
 
   const [formData, setFormData] = useState({
     userId,
-    userName: Name,
+    userName: userName,
     userNumber: userPhone,
     photographerName,
     description,
@@ -19,7 +27,9 @@ const EditImage = () => {
   const [users, setUsers] = useState([]);
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [previewImage, setPreviewImage] = useState(`http://localhost:8081/${imagePath}`);
+  const [previewImage, setPreviewImage] = useState(
+    `http://localhost:8081/${imagePath}`
+  );
 
   const navigate = useNavigate();
 
@@ -44,9 +54,10 @@ const EditImage = () => {
     setFormData({ ...formData, [name]: value });
 
     if (value.length >= 2) {
-      const results = users.filter(user =>
-        user.userId.toString().includes(value) ||
-        user.userName.includes(value)
+      const results = users.filter(
+        (user) =>
+          user.userId.toString().includes(value) ||
+          user.userName.includes(value)
       );
       setSearchResults(results);
     } else {
@@ -90,13 +101,18 @@ const EditImage = () => {
       }
     });
 
+    // Logging FormData contents to inspect all the fields
+    // for (let [key, value] of data.entries()) {
+    //   console.log(`${key}: ${value}`);
+    // }
+
     try {
-      await editImage(imageId, data);
+      const response = await editImage(imageId, data);
       alert("اطلاعات عکس با موفقیت به‌روزرسانی شد");
-      navigate(`/images`, { state: { isAdmin, userName } });
+      navigate(`/images`);
     } catch (err) {
       console.error(err);
-      alert("خطا در به‌روزرسانی اطلاعات عکس");
+      alert(`خطا در به‌روزرسانی اطلاعات عکس: ${err.message}`);
     }
   };
 
@@ -166,7 +182,8 @@ const EditImage = () => {
                                 )
                               }
                             >
-                              {user.userId} - {user.userName} - {user.userNumber}
+                              {user.userId} - {user.userName} -{" "}
+                              {user.userNumber}
                             </li>
                           ))}
                         </ul>
@@ -224,7 +241,6 @@ const EditImage = () => {
                       />
                       <Link
                         to={`/images`}
-                        state={{ isAdmin, userName }}
                         className="btn mx-2"
                         style={{ backgroundColor: COMMENT }}
                       >

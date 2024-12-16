@@ -6,9 +6,10 @@ import * as Yup from "yup";
 import { useEffect, useState } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { jwtDecode } from "jwt-decode"; // Correct default import
+const bcrypt = require("bcryptjs");
 
 const AddUser = () => {
-  const [lastUser, setLastUser] = useState(null); 
+  const [lastUser, setLastUser] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [userInfo, setUserInfo] = useState(null); // Initialize as null
   const navigate = useNavigate();
@@ -16,7 +17,7 @@ const AddUser = () => {
   useEffect(() => {
     const token = document.cookie
       .split("; ")
-      .find(row => row.startsWith("token="))
+      .find((row) => row.startsWith("token="))
       ?.split("=")[1];
 
     if (token) {
@@ -24,7 +25,7 @@ const AddUser = () => {
         const decodedToken = jwtDecode(token); // Correct default import usage
         setUserInfo({
           isAdmin: decodedToken.role === "admin" ? 1 : 0, // Ensure boolean
-          userName: decodedToken.userName
+          userName: decodedToken.userName,
         });
       } catch (error) {
         console.error("Error decoding token:", error);
@@ -38,7 +39,7 @@ const AddUser = () => {
     const fetchLastUser = async () => {
       try {
         const data = await getLastUserId();
-        setLastUser(data[0]); 
+        setLastUser(data[0]);
       } catch (error) {
         console.error("Error fetching last user:", error);
       }
@@ -56,8 +57,7 @@ const AddUser = () => {
     userNumber: Yup.string()
       .required("شماره همراه اجباری است")
       .matches(/^[0-9]+$/, "فقط اعداد مجاز است"),
-    userEmail: Yup.string()
-      .email("ایمیل باید معتبر باشد"),
+    userEmail: Yup.string().email("ایمیل باید معتبر باشد"),
     userPassword: Yup.string()
       .required("رمز عبور اجباری است")
       .min(8, "رمز عبور باید حداقل 8 کاراکتر باشد"),
@@ -77,30 +77,45 @@ const AddUser = () => {
     validationSchema: validationSchema,
     onSubmit: async (values) => {
       try {
-        const newUser = {
-          userId: lastUser.userId + 1,
-          userName: values.userName,
-          userNumber: values.userNumber,
-          userEmail: values.userEmail || null, 
-          userPassword: values.userPassword,
-        };
-        const addedUser = await addUser(newUser);
-        alert(`کاربر جدید با شناسه "${lastUser.userId + 1}" با موفقیت ایجاد شد`);
-        navigate(`/users`);
+        const data = new FormData();
+        data.append("userId", lastUser.userId + 1);
+        data.append("userName", values.userName);
+        data.append("userNumber", values.userNumber);
+        data.append("userEmail", values.userEmail || null); 
+        data.append("userPassword", values.userPassword);
+  
+        const response = await addUser(data);
+  
+        console.log("Response from addUser:", response);
+  
+        if (response.message === "اطلاعات با موفقیت ثبت شد") {
+          alert(`کاربر جدید با شناسه "${lastUser.userId + 1}" با موفقیت ایجاد شد`);
+          navigate(`/users`);
+        } else {
+          throw new Error(response.message);
+        }
       } catch (error) {
+        console.error(error);
         alert("نام کاربری یا شماره همراه وارد شده قبلا ثبت شده است");
       }
     },
   });
+  
+  
+  
+  
 
   const generatePassword = () => {
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let password = '';
+    const characters =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let password = "";
     for (let i = 0; i < 10; i++) {
-      password += characters.charAt(Math.floor(Math.random() * characters.length));
+      password += characters.charAt(
+        Math.floor(Math.random() * characters.length)
+      );
     }
-    formik.setFieldValue('userPassword', password);
-    formik.setFieldValue('confirmPassword', password);
+    formik.setFieldValue("userPassword", password);
+    formik.setFieldValue("confirmPassword", password);
   };
 
   const toggleShowPassword = () => {
@@ -173,7 +188,9 @@ const AddUser = () => {
                     autoComplete="off"
                   />
                   {formik.touched.userNumber && formik.errors.userNumber ? (
-                    <div className="text-danger">{formik.errors.userNumber}</div>
+                    <div className="text-danger">
+                      {formik.errors.userNumber}
+                    </div>
                   ) : null}
                 </div>
                 <div className="mb-2">
@@ -230,8 +247,11 @@ const AddUser = () => {
                     onBlur={formik.handleBlur}
                     autoComplete="new-password"
                   />
-                  {formik.touched.confirmPassword && formik.errors.confirmPassword ? (
-                    <div className="text-danger">{formik.errors.confirmPassword}</div>
+                  {formik.touched.confirmPassword &&
+                  formik.errors.confirmPassword ? (
+                    <div className="text-danger">
+                      {formik.errors.confirmPassword}
+                    </div>
                   ) : null}
                 </div>
                 <div className="mb-2 d-flex justify-content-end">
@@ -239,7 +259,7 @@ const AddUser = () => {
                     type="button"
                     className="btn btn-outline-primary"
                     onClick={generatePassword}
-                    style={{margin: "0 auto"}}
+                    style={{ margin: "0 auto" }}
                   >
                     تولید رمز عبور
                   </button>

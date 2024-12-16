@@ -16,6 +16,7 @@ const EditUser = () => {
   const [user, setUser] = useState({
     userName: "",
     userNumber: "",
+    userEmail: "", // اضافه کردن فیلد ایمیل
     userPassword: "",
     confirmPassword: "",
   });
@@ -28,6 +29,7 @@ const EditUser = () => {
       setUser({
         userName: result.userName,
         userNumber: result.userNumber,
+        userEmail: result.userEmail || "", // اضافه کردن فیلد ایمیل
         userPassword: "",
         confirmPassword: "",
       });
@@ -39,6 +41,7 @@ const EditUser = () => {
     initialValues: {
       userName: user.userName,
       userNumber: user.userNumber,
+      userEmail: user.userEmail,
       userPassword: "",
       confirmPassword: "",
     },
@@ -50,6 +53,8 @@ const EditUser = () => {
       userNumber: Yup.string()
         .required("شماره همراه اجباری است")
         .matches(/^[0-9]+$/, "فقط اعداد مجاز است"),
+      userEmail: Yup.string()
+        .email("ایمیل باید معتبر باشد"),
       userPassword: Yup.string()
         .min(8, "رمز عبور باید حداقل 8 کاراکتر باشد"),
       confirmPassword: Yup.string()
@@ -60,21 +65,31 @@ const EditUser = () => {
         let updatedUser = {
           userName: values.userName,
           userNumber: values.userNumber,
+          userEmail: values.userEmail,
         };
-        
+  
         if (values.userPassword) {
-          const hashedPassword = await bcrypt.hash(values.userPassword, 10); // Hashing the password if it's provided
+          const hashedPassword = await bcrypt.hash(values.userPassword, 10);
           updatedUser.userPassword = hashedPassword;
         }
-
-        await editUser(userId, updatedUser);
-        alert("اطلاعات کاربر با موفقیت ویرایش شد");
-        navigate(`/users`, { state: { userName, isAdmin } });
+  
+        const response = await editUser(userId, updatedUser);
+  
+        console.log("Response from editUser:", response);
+  
+        if (response.message === "User updated successfully") {
+          alert("اطلاعات کاربر با موفقیت ویرایش شد");
+          navigate(`/users`);
+        } else {
+          throw new Error(response.message);
+        }
       } catch (error) {
+        console.error(error);
         alert("نام کاربری یا شماره همراه وارد شده قبلا ثبت شده است");
       }
     },
   });
+  
 
   const generatePassword = () => {
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -143,6 +158,22 @@ const EditUser = () => {
                       {formik.touched.userNumber && formik.errors.userNumber ? (
                         <div className="text-danger">
                           {formik.errors.userNumber}
+                        </div>
+                      ) : null}
+                    </div>
+                    <div className="mb-2">
+                      <input
+                        name="userEmail" // اضافه کردن فیلد ایمیل به فرم
+                        type="email"
+                        className="form-control"
+                        value={formik.values.userEmail}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        placeholder="ایمیل مشتری (اختیاری)"
+                      />
+                      {formik.touched.userEmail && formik.errors.userEmail ? (
+                        <div className="text-danger">
+                          {formik.errors.userEmail}
                         </div>
                       ) : null}
                     </div>

@@ -1,7 +1,11 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import axios from "axios";
-import { getAllUsers, searchUsers, getLastImageId } from "../../services/index";
+import {
+  getAllUsers,
+  searchUsers,
+  getLastImageId,
+  uploadImage,
+} from "../../services/index"; // Import the new function
 import { Spinner } from "..";
 import { COMMENT, GREEN, PURPLE } from "../../helpers/colors";
 import { jwtDecode } from "jwt-decode"; // Correct default import
@@ -27,7 +31,7 @@ const AddImage = () => {
   useEffect(() => {
     const token = document.cookie
       .split("; ")
-      .find(row => row.startsWith("token="))
+      .find((row) => row.startsWith("token="))
       ?.split("=")[1];
 
     if (token) {
@@ -35,7 +39,7 @@ const AddImage = () => {
         const decodedToken = jwtDecode(token); // Correct default import usage
         setUserInfo({
           isAdmin: decodedToken.role === "admin" ? 1 : 0, // Ensure boolean
-          userName: decodedToken.userName
+          userName: decodedToken.userName,
         });
       } catch (error) {
         console.error("Error decoding token:", error);
@@ -109,7 +113,7 @@ const AddImage = () => {
     });
 
     try {
-      await axios.post("http://localhost:8081/upload", data);
+      await uploadImage(data); // Call the new function
       alert("عکس با موفقیت بارگزاری شد");
       navigate("/images");
     } catch (err) {
@@ -194,7 +198,8 @@ const AddImage = () => {
                                 )
                               }
                             >
-                              {user.userId} - {user.userName} - {user.userNumber}
+                              {user.userId} - {user.userName} -{" "}
+                              {user.userNumber}
                             </li>
                           ))}
                         </ul>
@@ -269,4 +274,4 @@ const AddImage = () => {
   );
 };
 
-export default AddImage
+export default AddImage;

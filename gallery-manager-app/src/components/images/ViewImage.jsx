@@ -6,13 +6,11 @@ const ViewImage = () => {
   const location = useLocation();
 
   const {
-    LoggedUserName: userName,
     imageId,
     imagePath,
     userId,
-    Name,
+    userName,
     userPhone,
-    isAdmin,
     photographerName,
     description,
   } = location.state;
@@ -55,7 +53,7 @@ const ViewImage = () => {
                     شناسه مشتری : <span className="fw-bold">{userId}</span>
                   </li>
                   <li className="list-group-item list-group-item-dark">
-                    نام مشتری : <span className="fw-bold">{Name}</span>
+                    نام مشتری : <span className="fw-bold">{userName}</span>
                   </li>
                   <li className="list-group-item list-group-item-dark">
                     شماره همراه مشتری :{" "}
@@ -74,7 +72,6 @@ const ViewImage = () => {
               <div className="d-grid gap-2 col-6 mx-auto">
                 <Link
                   to={`/images`}
-                  state= {{isAdmin, userName}}
                   className="btn"
                   style={{ backgroundColor: PURPLE }}
                 >

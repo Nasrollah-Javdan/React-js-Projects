@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { jwtDecode } from "jwt-decode"; 
 import { getAllImages, getUserImages, searchImages } from "../../services";
@@ -146,13 +146,11 @@ const Images = ({ confirmDelete, confirmDownload }) => {
                 imagePath={i.imagePath}
                 userId={i.userId}
                 userName={i.userName}
-                LoggedUserName={userInfo.userName}
                 userPhone={i.userNumber}
                 photographerName={i.photographerName}
                 description={i.description}
                 confirmDelete={confirmDelete}
                 confirmDownload={confirmDownload}
-                isAdmin={userInfo.isAdmin}
                 setImages={setImages}
               />
             ))
