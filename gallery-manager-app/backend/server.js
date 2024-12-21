@@ -1,14 +1,22 @@
+// استفاده از فریمورک express Js برای سادگی کار بیشتر
 const express = require("express");
+// برای اتصال به دیتابیس
 const mysql = require("mysql");
+// برای اجازه دسترسی به لینک های خارجی
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const multer = require("multer");
 const path = require("path");
+// عملیات کراد برای فایل های سیستمی
 const fs = require("fs");
+// هش کردن اطلاعات
 const bcrypt = require("bcryptjs");
+// ایجاد توکن
 const jwt = require("jsonwebtoken");
+//
 const cookieParser = require("cookie-parser");
 
+// اعتبار سنجی توکن و اعمال محدودیت متناسب نقش کاربر ورودی
 const authenticateToken = (req, res, next) => {
   const token = req.cookies.token;
   if (!token)
@@ -18,12 +26,12 @@ const authenticateToken = (req, res, next) => {
     const verified = jwt.verify(token, "your_jwt_secret");
     req.user = verified;
     if (req.user.role === "admin") {
-      next(); // دسترسی کامل به همه متدها برای admin
+      next(); // دسترسی کامل برای ادمین
     } else if (
       req.user.role === "user" &&
       (req.path === "/user-images" || req.path === "/forget-password")
     ) {
-      next(); // دسترسی محدود به مسیرهای /user-images و /forget-password برای کاربر
+      next(); // فقط برای دو مسیر بالا دسترسی برای کاربر وجود دارد
     } else {
       res.status(403).json({ message: "دسترسی امکان پذیر نیست" });
     }
@@ -32,22 +40,21 @@ const authenticateToken = (req, res, next) => {
   }
 };
 
+// استفاده از اکسپرس
 const app = express();
+// برای افزودن کوکی
 app.use(cookieParser());
+// مشخص کردن مسیر فرانت اند و اجازه ارسال کوکی
 app.use(
   cors({
-    origin: "http://localhost:3000", // آدرس فرانت‌اند شما
-    credentials: true, // اجازه ارسال کوکی‌ها
+    origin: "http://localhost:3000",
+    credentials: true,
   })
 );
+
 app.use(bodyParser.json());
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// Set the limit for JSON body parser
-// app.use(bodyParser.json({ limit: '50mb' }));
-// Set the limit for URL-encoded body parser
-// app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
-
+// اتصال به دیتابیس لوکال هاست
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
@@ -55,6 +62,7 @@ const db = mysql.createConnection({
   database: "gallery",
 });
 
+// کنترل اتصال به دیتابیس
 db.connect((err) => {
   if (err) {
     console.error("اتصال به پایگاه داده امکان پذیر نیست", err);
@@ -63,6 +71,7 @@ db.connect((err) => {
   console.log("اتصال به پایگاه داده برقرار است");
 });
 
+// تعریف محل ذخیره عکس ها و مشخص کردن نحوه اسم گذاری برای عکس ها
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, "uploads/");
@@ -72,6 +81,7 @@ const storage = multer.diskStorage({
   },
 });
 
+// متد فراموشی رمز
 app.post("/forget-password", async (req, res) => {
   const { email } = req.body;
   const sql = "SELECT * FROM users WHERE userEmail = ?";
@@ -94,6 +104,7 @@ app.post("/forget-password", async (req, res) => {
 
 const upload = multer({ storage: storage });
 
+// متد بارگزاری عکس جدید
 app.post(
   "/upload",
   authenticateToken,
@@ -133,6 +144,7 @@ app.post(
   }
 );
 
+// متد گرفتن اطلاعات کاربران از دیتابیس
 app.get("/users", authenticateToken, (req, res) => {
   if (req.user.role !== "admin") {
     return res.status(403).json({ message: "دسترسی امکان پذیر نیست" });
@@ -146,10 +158,12 @@ app.get("/users", authenticateToken, (req, res) => {
   });
 });
 
+// متد گرفتن اطلاعات از دیتابیس
 app.get("/images", authenticateToken, (req, res) => {
   if (req.user.role !== "admin") {
     return res.status(403).json({ message: "دسترسی امکان پذیر نیست" });
   }
+
   const sql = "SELECT * FROM images";
   db.query(sql, (err, results) => {
     if (err) {
@@ -163,6 +177,66 @@ app.get("/images", authenticateToken, (req, res) => {
   });
 });
 
+app.use("/uploads", (req, res, next) => {
+  const token = req.cookies.token;
+  if (!token) {
+    return res.status(401).json({ message: "دسترسی امکان پذیر نیست" });
+  }
+
+  try {
+    const verified = jwt.verify(token, "your_jwt_secret");
+    req.user = verified;
+    
+    if (req.user.role === 'admin') {
+      express.static(path.join(__dirname, "uploads"))(req, res, next);
+    } else {
+      const sql = "SELECT imagePath FROM images WHERE userName = ?";
+      db.query(sql, [req.user.userName], (err, results) => {
+        if (err) {
+          return res.status(500).send(err);
+        }
+        const userImages = results.map((result) => path.basename(result.imagePath));
+        const requestedImage = path.basename(req.path);
+
+        if (userImages.includes(requestedImage)) {
+          express.static(path.join(__dirname, "uploads"))(req, res, next);
+        } else {
+          res.status(403).json({ message: "دسترسی امکان پذیر نیست" });
+        }
+      });
+    }
+  } catch (err) {
+    res.status(400).json({ message: "توکن شما معتبر نمی باشد" });
+  }
+});
+
+
+app.get("/user-images", authenticateToken, (req, res, next) => {
+  const sql = "SELECT imagePath FROM images WHERE userName = ?";
+  db.query(sql, [req.user.userName], (err, results) => {
+    if (err) {
+      return res.status(500).send(err);
+    }
+    const userImages = results.map((result) => path.basename(result.imagePath));
+    // console.log("[INFO] User images fetched from DB:", userImages);
+
+    req.userImages = userImages; 
+    next();
+  });
+}, (req, res) => {
+  const { userName } = req.query;
+  const sql = "SELECT * FROM images WHERE userName = ?";
+  db.query(sql, [userName], (err, results) => {
+    if (err) {
+      return res.status(500).send(err);
+    }
+    res.json(results);
+  });
+});
+
+
+
+// متد جستجوی کاربر در دیتابیس
 app.get("/search-users", authenticateToken, (req, res) => {
   const searchQuery = req.query.q;
   const sql = "SELECT * FROM users WHERE userId LIKE ? OR userName LIKE ?";
@@ -174,6 +248,7 @@ app.get("/search-users", authenticateToken, (req, res) => {
   });
 });
 
+//
 app.get("/users/:userId", authenticateToken, (req, res) => {
   const userId = req.params.userId;
   const sql = "SELECT * FROM users WHERE userId = ?";
@@ -229,16 +304,6 @@ app.get("/search-images", authenticateToken, (req, res) => {
   );
 });
 
-app.get("/user-images", authenticateToken, (req, res) => {
-  const { userName } = req.query;
-  const sql = "SELECT * FROM images WHERE userName = ?";
-  db.query(sql, [userName], (err, results) => {
-    if (err) {
-      return res.status(500).send(err);
-    }
-    res.json(results);
-  });
-});
 
 app.delete("/images/:imageId", authenticateToken, (req, res) => {
   if (req.user.role !== "admin") {
@@ -381,64 +446,79 @@ app.post("/users", authenticateToken, addUser.none(), async (req, res) => {
       return res.status(500).send(checkErr);
     }
     if (results.length > 0) {
-      return res.status(400).json({ message: "نام کاربری یا شماره همراه قبلاً ثبت شده است" });
+      return res
+        .status(400)
+        .json({ message: "نام کاربری یا شماره همراه قبلاً ثبت شده است" });
     }
 
     // const hashedPassword = await bcrypt.hash(userPassword, 10);
-    const insertSql = "INSERT INTO users (userId, userName, userNumber, userEmail, userPassword) VALUES (?, ?, ?, ?, ?)";
+    const insertSql =
+      "INSERT INTO users (userId, userName, userNumber, userEmail, userPassword) VALUES (?, ?, ?, ?, ?)";
 
-    db.query(insertSql, [userId, userName, userNumber, userEmail || null, userPassword], (insertErr, result) => {
-      if (insertErr) {
-        return res.status(500).send(insertErr);
+    db.query(
+      insertSql,
+      [userId, userName, userNumber, userEmail || null, userPassword],
+      (insertErr, result) => {
+        if (insertErr) {
+          return res.status(500).send(insertErr);
+        }
+
+        // Send JSON response
+        res
+          .status(200)
+          .json({
+            message: "اطلاعات با موفقیت ثبت شد",
+            userId: result.insertId,
+          });
       }
-
-      // Send JSON response
-      res.status(200).json({ message: "اطلاعات با موفقیت ثبت شد", userId: result.insertId });
-    });
+    );
   });
 });
-
 
 const editUser = multer();
 
-app.put("/users/:userId", authenticateToken, editUser.none(), async (req, res) => {
-  if (req.user.role !== "admin") {
-    return res.status(403).json({ message: "دسترسی امکان پذیر نیست" });
-  }
-
-  const userId = req.params.userId;
-  const { userName, userNumber, userEmail, userPassword } = req.body;
-
-  // Log received data on the server
-  console.log("Received data on server:");
-  console.log("userId:", userId);
-  console.log("userName:", userName);
-  console.log("userNumber:", userNumber);
-  console.log("userEmail:", userEmail);
-  console.log("userPassword:", userPassword);
-
-  let sql;
-  let values;
-
-  if (userPassword) {
-    // const hashedPassword = await bcrypt.hash(userPassword, 10);
-    sql = "UPDATE users SET userName = ?, userNumber = ?, userEmail = ?, userPassword = ? WHERE userId = ?";
-    values = [userName, userNumber, userEmail, userPassword, userId];
-  } else {
-    sql = "UPDATE users SET userName = ?, userNumber = ?, userEmail = ? WHERE userId = ?";
-    values = [userName, userNumber, userEmail, userId];
-  }
-
-  db.query(sql, values, (err, result) => {
-    if (err) {
-      return res.status(500).json({ message: err.message });
+app.put(
+  "/users/:userId",
+  authenticateToken,
+  editUser.none(),
+  async (req, res) => {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "دسترسی امکان پذیر نیست" });
     }
-    res.status(200).json({ message: "User updated successfully" });
-  });
-});
 
+    const userId = req.params.userId;
+    const { userName, userNumber, userEmail, userPassword } = req.body;
 
+    // Log received data on the server
+    console.log("Received data on server:");
+    console.log("userId:", userId);
+    console.log("userName:", userName);
+    console.log("userNumber:", userNumber);
+    console.log("userEmail:", userEmail);
+    console.log("userPassword:", userPassword);
 
+    let sql;
+    let values;
+
+    if (userPassword) {
+      // const hashedPassword = await bcrypt.hash(userPassword, 10);
+      sql =
+        "UPDATE users SET userName = ?, userNumber = ?, userEmail = ?, userPassword = ? WHERE userId = ?";
+      values = [userName, userNumber, userEmail, userPassword, userId];
+    } else {
+      sql =
+        "UPDATE users SET userName = ?, userNumber = ?, userEmail = ? WHERE userId = ?";
+      values = [userName, userNumber, userEmail, userId];
+    }
+
+    db.query(sql, values, (err, result) => {
+      if (err) {
+        return res.status(500).json({ message: err.message });
+      }
+      res.status(200).json({ message: "User updated successfully" });
+    });
+  }
+);
 
 app.post("/login", async (req, res) => {
   const { userId, password } = req.body;
