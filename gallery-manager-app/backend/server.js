@@ -29,7 +29,7 @@ const authenticateToken = (req, res, next) => {
       next(); // دسترسی کامل برای ادمین
     } else if (
       req.user.role === "user" &&
-      (req.path === "/user-images" || req.path === "/forget-password")
+      (req.path === "/user-images" || req.path === "/forget-password" || req.path === "/search-images")
     ) {
       next(); // فقط برای دو مسیر بالا دسترسی برای کاربر وجود دارد
     } else {
@@ -158,6 +158,28 @@ app.get("/users", authenticateToken, (req, res) => {
   });
 });
 
+app.get("/search-images", authenticateToken, (req, res) => {
+  const searchQuery = req.query.q;
+
+  let sql;
+  let params;
+
+  if (req.user.role === "admin") {
+    sql = "SELECT * FROM images WHERE imageId LIKE ? OR userId LIKE ? OR userName LIKE ?";
+    params = [`%${searchQuery}%`, `%${searchQuery}%`, `%${searchQuery}%`];
+  } else {
+    sql = "SELECT * FROM images WHERE (imageId LIKE ? OR userId LIKE ? OR userName LIKE ?) AND userName = ?";
+    params = [`%${searchQuery}%`, `%${searchQuery}%`, `%${searchQuery}%`, req.user.userName];
+  }
+
+  db.query(sql, params, (err, results) => {
+    if (err) {
+      return res.status(500).send(err);
+    }
+    res.json(results);
+  });
+});
+
 // متد گرفتن اطلاعات از دیتابیس
 app.get("/images", authenticateToken, (req, res) => {
   if (req.user.role !== "admin") {
@@ -235,7 +257,6 @@ app.get("/user-images", authenticateToken, (req, res, next) => {
 });
 
 
-
 // متد جستجوی کاربر در دیتابیس
 app.get("/search-users", authenticateToken, (req, res) => {
   const searchQuery = req.query.q;
@@ -288,21 +309,7 @@ app.get("/lastImageId", authenticateToken, (req, res) => {
   });
 });
 
-app.get("/search-images", authenticateToken, (req, res) => {
-  const searchQuery = req.query.q;
-  const sql =
-    "SELECT * FROM images WHERE imageId LIKE ? OR userId LIKE ? OR userName LIKE ?";
-  db.query(
-    sql,
-    [`%${searchQuery}%`, `%${searchQuery}%`, `%${searchQuery}%`],
-    (err, results) => {
-      if (err) {
-        return res.status(500).send(err);
-      }
-      res.json(results);
-    }
-  );
-});
+
 
 
 app.delete("/images/:imageId", authenticateToken, (req, res) => {
