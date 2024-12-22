@@ -114,13 +114,13 @@ app.post(
       return res.status(403).json({ message: "دسترسی امکان پذیر نیست" });
     }
 
-    const { userId, userName, userNumber, photographerName, description } =
+    const { imageId, userId, userName, userNumber, photographerName, description } =
       req.body;
     const imagePath = req.file.path.replace(/\\/g, "/");
 
     // Log incoming data for debugging
     // console.log("Received data on server:");
-    // console.log("userId:", userId);
+    // console.log("imageId:", imageId);
     // console.log("userName:", userName);
     // console.log("userNumber:", userNumber);
     // console.log("photographerName:", photographerName);
@@ -128,10 +128,10 @@ app.post(
     // console.log("imagePath:", imagePath);
 
     const sql =
-      "INSERT INTO images (imagePath, userId, userName, userNumber, photographerName, description) VALUES (?, ?, ?, ?, ?, ?)";
+      "INSERT INTO images (imageId ,imagePath, userId, userName, userNumber, photographerName, description) VALUES (?, ?, ?, ?, ?, ?, ?)";
     db.query(
       sql,
-      [imagePath, userId, userName, userNumber, photographerName, description],
+      [imageId, imagePath, userId, userName, userNumber, photographerName, description],
       (err, result) => {
         if (err) {
           return res.status(500).send(err);
@@ -246,9 +246,10 @@ app.get("/user-images", authenticateToken, (req, res, next) => {
     next();
   });
 }, (req, res) => {
-  const { userName } = req.query;
+  // const { userName } = req.query;
+  // console.log(req.user.userName);
   const sql = "SELECT * FROM images WHERE userName = ?";
-  db.query(sql, [userName], (err, results) => {
+  db.query(sql, [req.user.userName], (err, results) => {
     if (err) {
       return res.status(500).send(err);
     }
@@ -547,7 +548,7 @@ app.post("/login", async (req, res) => {
           "your_jwt_secret",
           { expiresIn: "1h" }
         );
-        res.cookie("token", token, { httpOnly: true }); // ذخیره توکن به صورت HttpOnly cookie
+        res.cookie("token", token, { httpOnly: true }); 
         res.json({
           authenticated: true,
           token,
