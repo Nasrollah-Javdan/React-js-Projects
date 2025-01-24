@@ -1,6 +1,6 @@
-import { Link } from "react-router-dom";
-import { useState, useEffect } from "react";
-import { jwtDecode } from "jwt-decode"; 
+import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { jwtDecode } from "jwt-decode";
 import { getAllImages, getUserImages, searchImages } from "../../services";
 import Image from "../images/Image";
 import Spinner from "../Spinner";
@@ -13,38 +13,52 @@ const Images = ({ confirmDelete, confirmDownload }) => {
   const [filteredImages, setFilteredImages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [userInfo, setUserInfo] = useState(null); // Initialize as null
+  const [userInfo, setUserInfo] = useState(null);
+  const alertShown = useRef(false);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     const token = document.cookie
       .split("; ")
-      .find(row => row.startsWith("token="))
+      .find((row) => row.startsWith("token="))
       ?.split("=")[1];
+
+    // console.error("token: ", token);
+
 
     if (token) {
       try {
-        const decodedToken = jwtDecode(token); // Correct named import usage
+        const decodedToken = jwtDecode(token);
         setUserInfo({
-          isAdmin: decodedToken.role === "admin" ? 1 : 0, // Ensure boolean
-          userName: decodedToken.userName
+          isAdmin: decodedToken.role === "admin" ? 1 : 0,
+          userName: decodedToken.userName,
         });
       } catch (error) {
-        console.error("Error decoding token:", error);
+        if(!alertShown.current){
+          alert("دسترسی شما غیرمجاز است، به صفحه لاگین منتقل میشوید");
+          alertShown.current = true; 
+        }
+        navigate("/");
+        console.error("Error decoding token");
       }
     } else {
+      if(!alertShown.current){
+        alert("دسترسی شما غیرمجاز است، به صفحه لاگین منتقل میشوید");
+        alertShown.current = true; 
+      }
+      navigate("/");
       console.error("No token found in cookies.");
     }
   }, []);
 
   useEffect(() => {
     const fetchImages = async () => {
-      if (userInfo) { // Ensure userInfo is set before making API calls
+      if (userInfo) {
         let result;
-        // console.log(userInfo.isAdmin);
         if (userInfo.isAdmin) {
           result = await getAllImages();
         } else {
-          
           result = await getUserImages(userInfo.userName);
         }
         setImages(result);
@@ -61,6 +75,7 @@ const Images = ({ confirmDelete, confirmDownload }) => {
     const fetchSearchResults = async () => {
       if (searchTerm) {
         const result = await searchImages(searchTerm);
+        console.log(result);
         setFilteredImages(result);
       } else {
         setFilteredImages(images);

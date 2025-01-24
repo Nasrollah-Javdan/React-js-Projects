@@ -3,7 +3,7 @@ import { COMMENT, GREEN, PURPLE } from "../../helpers/colors";
 import { addUser, getLastUserId } from "../../services";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { jwtDecode } from "jwt-decode"; // Correct default import
 const bcrypt = require("bcryptjs");
@@ -11,8 +11,10 @@ const bcrypt = require("bcryptjs");
 const AddUser = () => {
   const [lastUser, setLastUser] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
-  const [userInfo, setUserInfo] = useState(null); // Initialize as null
+  const [userInfo, setUserInfo] = useState(null); 
   const navigate = useNavigate();
+  const alertShown = useRef(false);
+
 
   useEffect(() => {
     const token = document.cookie
@@ -22,15 +24,25 @@ const AddUser = () => {
 
     if (token) {
       try {
-        const decodedToken = jwtDecode(token); // Correct default import usage
+        const decodedToken = jwtDecode(token); 
         setUserInfo({
-          isAdmin: decodedToken.role === "admin" ? 1 : 0, // Ensure boolean
+          isAdmin: decodedToken.role === "admin" ? 1 : 0, 
           userName: decodedToken.userName,
         });
       } catch (error) {
+        if(!alertShown.current){
+          alert("دسترسی شما غیرمجاز است، به صفحه لاگین منتقل میشوید");
+          alertShown.current = true; 
+        }
+        navigate("/");
         console.error("Error decoding token:", error);
       }
     } else {
+      if(!alertShown.current){
+        alert("دسترسی شما غیرمجاز است، به صفحه لاگین منتقل میشوید");
+        alertShown.current = true; 
+      }
+      navigate("/");
       console.error("No token found in cookies.");
     }
   }, []);
@@ -81,8 +93,8 @@ const AddUser = () => {
         data.append("userId", lastUser.userId + 1);
         data.append("userName", values.userName);
         data.append("userNumber", values.userNumber);
-        data.append("userEmail", values.userEmail || null); 
-        data.append("userPassword", values.userPassword);
+        data.append("userEmail", values.userEmail); 
+        data.append("userPassword", await bcrypt.hash(values.userPassword, 10));
   
         const response = await addUser(data);
   

@@ -26,8 +26,7 @@ const LoginPage = () => {
       try {
         const response = await axios.post("http://localhost:8081/login", values);
         if (response.data.authenticated) {
-          // ذخیره توکن به عنوان کوکی
-          document.cookie = `token=${response.data.token};path=/`; // Remove HttpOnly
+          document.cookie = `token=${response.data.token};path=/`; 
           navigate("/images");
         }
       } catch (error) {

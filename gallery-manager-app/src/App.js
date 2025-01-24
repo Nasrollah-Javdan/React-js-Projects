@@ -22,7 +22,6 @@ import {
   COMMENT,
   GREEN,
   RED,
-  BACKGROUND,
 } from "./helpers/colors";
 import AddUser from "./components/users/AddUser";
 import Users from "./components/users/Users";
@@ -37,16 +36,24 @@ const App = () => {
     const folder = zip.folder("images");
 
     // دانلود تصویر
-    const response = await fetch(`http://localhost:8081/${imagePath}`);
+    const response = await fetch(`http://localhost:8081/${imagePath}`, {
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      console.error("Failed to fetch image:", response.statusText);
+      return;
+    }
+
     const blob = await response.blob();
-    const filename = imagePath.split("/").pop();
+    const filename = "image." + imagePath.split(".").pop();
 
     // افزودن فایل به زیپ
     folder.file(filename, blob);
 
     // ایجاد و دانلود آرشیو زیپ
     zip.generateAsync({ type: "blob" }).then((content) => {
-      saveAs(content, "images.zip");
+      saveAs(content, "image.zip");
     });
 
     alert("فایل در حال دانلود است");
@@ -54,26 +61,43 @@ const App = () => {
 
   const downloadPDF = async (imagePath) => {
     const link = `http://localhost:8081/${imagePath}`;
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = link;
 
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      const context = canvas.getContext("2d");
-      canvas.width = img.width;
-      canvas.height = img.height;
-      context.drawImage(img, 0, 0, img.width, img.height);
+    try {
+      const response = await fetch(link, {
+        credentials: "include", // Include credentials for authentication
+      });
 
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      pdf.addImage(canvas.toDataURL('image/jpeg'), 'JPEG', 0, 0);
-      pdf.save("image.pdf");
-      alert("فایل در حال دانلود است");
-    };
+      if (!response.ok) {
+        console.error("Failed to fetch image:", response.statusText);
+        alert("خطا در دانلود تصویر");
+        return;
+      }
 
-    img.onerror = () => {
+      const blob = await response.blob();
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = URL.createObjectURL(blob); // Create a blob URL for the image
+
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        context.drawImage(img, 0, 0, img.width, img.height);
+
+        const pdf = new jsPDF("p", "mm", "a4");
+        pdf.addImage(canvas.toDataURL("image/jpeg"), "JPEG", 0, 0);
+        pdf.save("image.pdf");
+        alert("فایل در حال دانلود است");
+      };
+
+      img.onerror = () => {
+        alert("خطا در دانلود تصویر");
+      };
+    } catch (error) {
+      console.error("Error downloading image:", error);
       alert("خطا در دانلود تصویر");
-    };
+    }
   };
 
   const confirmDownload = (imagePath) => {
@@ -166,7 +190,7 @@ const App = () => {
 
   return (
     <div className="App">
-      {(location.pathname !== "/users") && (location.pathname !== "/images") ? (
+      {location.pathname !== "/users" && location.pathname !== "/images" ? (
         <Navbar />
       ) : null}
       <Routes>
@@ -190,7 +214,7 @@ const App = () => {
         <Route path="/users/add" element={<AddUser />} />
         <Route path="/users/edit" element={<EditUser />} />
         <Route path="/forgetPass" element={<ForgetPass />} />
-        <Route path="*" element={<Navigate to="/" replace />} /> 
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>
   );

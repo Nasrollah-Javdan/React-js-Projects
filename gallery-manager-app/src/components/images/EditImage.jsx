@@ -1,8 +1,9 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Spinner } from "..";
 import { COMMENT, ORANGE, PURPLE } from "../../helpers/colors";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getAllUsers, editImage } from "../../services";
+import { jwtDecode } from "jwt-decode";
 
 const EditImage = () => {
   const location = useLocation();
@@ -30,8 +31,42 @@ const EditImage = () => {
   const [previewImage, setPreviewImage] = useState(
     `http://localhost:8081/${imagePath}`
   );
+  const [userInfo, setUserInfo] = useState(null); 
+  const alertShown = useRef(false);
+
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("token="))
+      ?.split("=")[1];    
+
+    if (token) {
+      try {
+        const decodedToken = jwtDecode(token);
+        setUserInfo({
+          isAdmin: decodedToken.role === "admin" ? 1 : 0,
+          userName: decodedToken.userName,
+        });
+      } catch (error) {
+        if(!alertShown.current){
+          alert("دسترسی شما غیرمجاز است، به صفحه لاگین منتقل میشوید");
+          alertShown.current = true; 
+        }
+        navigate("/");
+        console.error("Error decoding token:", error);
+      }
+    } else {
+      if(!alertShown.current){
+        alert("دسترسی شما غیرمجاز است، به صفحه لاگین منتقل میشوید");
+        alertShown.current = true; 
+      }
+      navigate("/");
+      console.error("No token found in cookies.");
+    }
+  }, []);
 
   useEffect(() => {
     const fetchUsers = async () => {

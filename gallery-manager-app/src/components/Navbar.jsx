@@ -1,13 +1,13 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { BACKGROUND, GREEN, PURPLE, RED } from "../helpers/colors";
 
 const Navbar = ({ userName }) => {
   const navigate = useNavigate();
 
+
   const handleLogout = () => {
-    // حذف کوکی توکن
-    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     navigate("/");
+    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
   };
 
   return (

@@ -1,9 +1,46 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { CURRENTLINE, CYAN, PURPLE } from "../../helpers/colors";
+import { jwtDecode } from "jwt-decode";
+import { useEffect, useRef, useState } from "react";
 
 const ViewImage = () => {
   const location = useLocation();
+  const [userInfo, setUserInfo] = useState(null); 
+  const alertShown = useRef(false);
+
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("token="))
+      ?.split("=")[1];    
+
+    if (token) {
+      try {
+        const decodedToken = jwtDecode(token);
+        setUserInfo({
+          isAdmin: decodedToken.role === "admin" ? 1 : 0,
+          userName: decodedToken.userName,
+        });
+      } catch (error) {
+        if(!alertShown.current){
+          alert("دسترسی شما غیرمجاز است، به صفحه لاگین منتقل میشوید");
+          alertShown.current = true; 
+        }
+        navigate("/");
+        console.error("Error decoding token:", error);
+      }
+    } else {
+      if(!alertShown.current){
+        alert("دسترسی شما غیرمجاز است، به صفحه لاگین منتقل میشوید");
+        alertShown.current = true; 
+      }
+      navigate("/");
+      console.error("No token found in cookies.");
+    }
+  }, []);
 
   const {
     imageId,

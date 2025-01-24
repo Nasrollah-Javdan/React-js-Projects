@@ -22,7 +22,6 @@ const ForgetPass = () => {
       try {
         const response = await axios.post("http://localhost:8081/forget-password", values);
         alert(response.data.message);
-        // alert("رمز جدید برای ایمیل شما ارسال شد");
         navigate("/");
       } catch (error) {
         if(error.response && error.response.status === 200){

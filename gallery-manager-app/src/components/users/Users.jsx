@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { jwtDecode } from "jwt-decode"; // Correct named import
 import { getAllUsers, searchUsers } from "../../services";
 import Spinner from "../Spinner";
@@ -14,6 +14,9 @@ const Users = ({ confirmDelete }) => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [userInfo, setUserInfo] = useState(null); // Initialize as null
+  const alertShown = useRef(false);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     const token = document.cookie
@@ -29,9 +32,19 @@ const Users = ({ confirmDelete }) => {
           userName: decodedToken.userName
         });
       } catch (error) {
+        if(!alertShown.current){
+          alert("دسترسی شما غیرمجاز است، به صفحه لاگین منتقل میشوید");
+          alertShown.current = true; 
+        }
+        navigate("/");
         console.error("Error decoding token:", error);
       }
     } else {
+      if(!alertShown.current){
+        alert("دسترسی شما غیرمجاز است، به صفحه لاگین منتقل میشوید");
+        alertShown.current = true; 
+      }
+      navigate("/");
       console.error("No token found in cookies.");
     }
   }, []);

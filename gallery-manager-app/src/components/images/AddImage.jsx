@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   getAllUsers,
   searchUsers,
@@ -26,7 +26,9 @@ const AddImage = () => {
   const [loading, setLoading] = useState(true);
   const [newImageId, setNewImageId] = useState(null);
   const [uploadedImage, setUploadedImage] = useState("");
-  const [userInfo, setUserInfo] = useState(null); // Initialize as null
+  const [userInfo, setUserInfo] = useState(null); 
+  const alertShown = useRef(false);
+
 
   useEffect(() => {
     const token = document.cookie
@@ -36,15 +38,25 @@ const AddImage = () => {
 
     if (token) {
       try {
-        const decodedToken = jwtDecode(token); // Correct default import usage
+        const decodedToken = jwtDecode(token); 
         setUserInfo({
-          isAdmin: decodedToken.role === "admin" ? 1 : 0, // Ensure boolean
+          isAdmin: decodedToken.role === "admin" ? 1 : 0, 
           userName: decodedToken.userName,
         });
       } catch (error) {
+        if(!alertShown.current){
+          alert("دسترسی شما غیرمجاز است، به صفحه لاگین منتقل میشوید");
+          alertShown.current = true; 
+        }
+        navigate("/");
         console.error("Error decoding token:", error);
       }
     } else {
+      if(!alertShown.current){
+        alert("دسترسی شما غیرمجاز است، به صفحه لاگین منتقل میشوید");
+        alertShown.current = true; 
+      }
+      navigate("/");
       console.error("No token found in cookies.");
     }
   }, []);
@@ -92,6 +104,7 @@ const AddImage = () => {
     setUploadedImage(imageUrl);
   };
 
+
   const createImage = async (e) => {
     e.preventDefault();
     const userExists = users.some(
@@ -111,9 +124,10 @@ const AddImage = () => {
     Object.keys(formData).forEach((key) => {
       data.append(key, formData[key]);
     });
+    data.append("imageId", newImageId);
 
     try {
-      await uploadImage(data); // Call the new function
+      await uploadImage(data); 
       alert("عکس با موفقیت بارگزاری شد");
       navigate("/images");
     } catch (err) {
@@ -159,7 +173,7 @@ const AddImage = () => {
                         name="newImageId"
                         type="text"
                         className="form-control"
-                        value={newImageId || ""}
+                        value={newImageId}
                         disabled
                         placeholder="شناسه عکس"
                       />

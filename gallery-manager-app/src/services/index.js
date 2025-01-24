@@ -13,9 +13,8 @@ const fetchWithToken = async (url, options = {}) => {
   options.headers = {
     ...options.headers,
     Authorization: `Bearer ${token}`,
-    // حذف 'Content-Type': 'application/json' زیرا فرم‌داده خود تنظیم می‌شود
   };
-  options.credentials = "include"; // اضافه کردن credentials به include
+  options.credentials = "include"; 
 
   const response = await fetch(url, options);
   if (!response.ok) {
@@ -67,7 +66,7 @@ export const addUser = async (data) => {
       console.log(`${key}: ${value}`);
     }
 
-    const token = getToken(); // Ensure getToken is defined and working
+    const token = getToken(); 
     const response = await fetch(url, {
       method: "POST",
       headers: {
@@ -79,7 +78,7 @@ export const addUser = async (data) => {
 
     console.log("Response status:", response.status);
 
-    // Check if response is a JSON object
+    
     const contentType = response.headers.get("content-type");
     if (contentType && contentType.indexOf("application/json") !== -1) {
       const responseData = await response.json();
@@ -106,7 +105,7 @@ export const editUser = async (id, user) => {
       data.append(key, user[key]);
     });
 
-    const token = getToken(); // Ensure getToken is defined and working
+    const token = getToken(); 
     const response = await fetch(url, {
       method: "PUT",
       headers: {
@@ -221,6 +220,7 @@ export const searchUsers = async (query) => {
 
 export const searchImages = async (query) => {
   try {
+    console.log(query);
     const data = await fetchWithToken(
       `http://localhost:8081/search-images?q=${query}`
     );
