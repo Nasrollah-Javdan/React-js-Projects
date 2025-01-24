@@ -16,29 +16,65 @@ const jwt = require("jsonwebtoken");
 //
 const cookieParser = require("cookie-parser");
 
+const key = "hashKey";
+function simpleEncryptDecrypt(input, key) {
+  let result = "";
+  for (let i = 0; i < input.length; i++) {
+    result += String.fromCharCode(
+      input.charCodeAt(i) ^ key.charCodeAt(i % key.length)
+    );
+  }
+  return result;
+}
+
 // اعتبار سنجی توکن و اعمال محدودیت متناسب نقش کاربر ورودی
 const authenticateToken = (req, res, next) => {
   const token = req.cookies.token;
-  if (!token)
+  if (!token) {
     return res.status(401).json({ message: "دسترسی امکان پذیر نیست" });
+  }
 
-  try {
-    const verified = jwt.verify(token, "your_jwt_secret");
+  
+  const verifyToken = (token, secretKey) => {
+    try {
+      return jwt.verify(token, secretKey);
+    } catch (err) {
+      return null;
+    }
+  };
+  
+  let admin = false;
+
+  let verified = verifyToken(token, adminSecretKey);
+  if(verified){
+    console.log("Admin Verified");
+    admin = true;
+  }else{
+    verified = verifyToken(token, userSecretKey);
+    if(verified){
+      console.log("User Verified");
+    }
+  }
+
+  if (verified) {
     req.user = verified;
-    if (req.user.role === "admin") {
-      next(); // دسترسی کامل برای ادمین
+    if (admin) {
+      next(); 
     } else if (
-      req.user.role === "user" &&
-      (req.path === "/user-images" || req.path === "/forget-password" || req.path === "/search-images")
+      !admin &&
+      (req.path === "/user-images" ||
+        req.path === "/forget-password" ||
+        req.path === "/search-images")
     ) {
-      next(); // فقط برای دو مسیر بالا دسترسی برای کاربر وجود دارد
+      next(); 
     } else {
       res.status(403).json({ message: "دسترسی امکان پذیر نیست" });
     }
-  } catch (err) {
+  } else {
     res.status(400).json({ message: "توکن شما معتبر نمی باشد" });
   }
 };
+
 
 // استفاده از اکسپرس
 const app = express();
@@ -77,7 +113,16 @@ const storage = multer.diskStorage({
     cb(null, "uploads/");
   },
   filename: function (req, file, cb) {
-    cb(null, Date.now() + "-" + path.basename(file.originalname));
+    cb(
+      null,
+      Date.now() +
+        path
+          .basename(file.originalname)
+          .substr(
+            path.basename(file.originalname).lastIndexOf("."),
+            path.basename(file.originalname).length
+          )
+    );
   },
 });
 
@@ -109,38 +154,51 @@ app.post(
   "/upload",
   authenticateToken,
   upload.single("fileToUpload"),
-  (req, res) => {
+  async (req, res) => {
     if (req.user.role !== "admin") {
       return res.status(403).json({ message: "دسترسی امکان پذیر نیست" });
     }
 
-    const { imageId, userId, userName, userNumber, photographerName, description } =
-      req.body;
+    const {
+      imageId,
+      userId,
+      userName,
+      userNumber,
+      photographerName,
+      description,
+    } = req.body;
     const imagePath = req.file.path.replace(/\\/g, "/");
 
-    // Log incoming data for debugging
-    // console.log("Received data on server:");
-    // console.log("imageId:", imageId);
-    // console.log("userName:", userName);
-    // console.log("userNumber:", userNumber);
-    // console.log("photographerName:", photographerName);
-    // console.log("description:", description);
-    // console.log("imagePath:", imagePath);
+    try {
+      const encryptedImagePath = simpleEncryptDecrypt(imagePath, key);
+      // console.log(encryptedImagePath);
 
-    const sql =
-      "INSERT INTO images (imageId ,imagePath, userId, userName, userNumber, photographerName, description) VALUES (?, ?, ?, ?, ?, ?, ?)";
-    db.query(
-      sql,
-      [imageId, imagePath, userId, userName, userNumber, photographerName, description],
-      (err, result) => {
-        if (err) {
-          return res.status(500).send(err);
+      const sql =
+        "INSERT INTO images (imageId, imagePath, userId, userName, userNumber, photographerName, description) VALUES (?, ?, ?, ?, ?, ?, ?)";
+      db.query(
+        sql,
+        [
+          imageId,
+          encryptedImagePath,
+          userId,
+          userName,
+          userNumber,
+          photographerName,
+          description,
+        ],
+        (err, result) => {
+          if (err) {
+            return res.status(500).send(err);
+          }
+          res.json({
+            message: "تصویر با موفقیت بارگزاری شد و در پایگاه داده قرار گرفت",
+          });
         }
-        res.json({
-          message: "تصویر با موفقیت بارگزاری شد و در پایگاه داده قرار گرفت",
-        });
-      }
-    );
+      );
+    } catch (err) {
+      console.error("Error encrypting image path:", err);
+      res.status(500).json({ message: "خطایی در پردازش تصویر رخ داده است" });
+    }
   }
 );
 
@@ -165,20 +223,35 @@ app.get("/search-images", authenticateToken, (req, res) => {
   let params;
 
   if (req.user.role === "admin") {
-    sql = "SELECT * FROM images WHERE imageId LIKE ? OR userId LIKE ? OR userName LIKE ?";
+    sql =
+      "SELECT * FROM images WHERE imageId LIKE ? OR userId LIKE ? OR userName LIKE ?";
     params = [`%${searchQuery}%`, `%${searchQuery}%`, `%${searchQuery}%`];
   } else {
-    sql = "SELECT * FROM images WHERE (imageId LIKE ? OR userId LIKE ? OR userName LIKE ?) AND userName = ?";
-    params = [`%${searchQuery}%`, `%${searchQuery}%`, `%${searchQuery}%`, req.user.userName];
+    sql =
+      "SELECT * FROM images WHERE (imageId LIKE ? OR userId LIKE ? OR userName LIKE ?) AND userName = ?";
+    params = [
+      `%${searchQuery}%`,
+      `%${searchQuery}%`,
+      `%${searchQuery}%`,
+      req.user.userName,
+    ];
   }
 
   db.query(sql, params, (err, results) => {
     if (err) {
       return res.status(500).send(err);
     }
+
+    results = results.map((result) => {
+      const decryptedImagePath = simpleEncryptDecrypt(result.imagePath, key);
+      result.imagePath = decryptedImagePath.replace(/\\/g, "/");
+      return result;
+    });
+
     res.json(results);
   });
 });
+
 
 // متد گرفتن اطلاعات از دیتابیس
 app.get("/images", authenticateToken, (req, res) => {
@@ -191,13 +264,18 @@ app.get("/images", authenticateToken, (req, res) => {
     if (err) {
       return res.status(500).send(err);
     }
+
+    const key = "hashKey";
+
     results = results.map((result) => {
-      result.imagePath = result.imagePath.replace(/\\/g, "/");
+      const decryptedImagePath = simpleEncryptDecrypt(result.imagePath, key);
+      result.imagePath = decryptedImagePath.replace(/\\/g, "/");
       return result;
     });
     res.json(results);
   });
 });
+
 
 app.use("/uploads", (req, res, next) => {
   const token = req.cookies.token;
@@ -205,11 +283,31 @@ app.use("/uploads", (req, res, next) => {
     return res.status(401).json({ message: "دسترسی امکان پذیر نیست" });
   }
 
-  try {
-    const verified = jwt.verify(token, "your_jwt_secret");
+  const verifyToken = (token, secretKey) => {
+    try {
+      return jwt.verify(token, secretKey);
+    } catch (err) {
+      return null;
+    }
+  };
+
+  let admin = false;
+
+  let verified = verifyToken(token, adminSecretKey);
+  if(verified){
+    console.log("Admin Verified");
+    admin = true;
+  }else{
+    verified = verifyToken(token, userSecretKey);
+    if(verified){
+      console.log("User Verified");
+    }
+  }
+
+  if (verified) {
     req.user = verified;
-    
-    if (req.user.role === 'admin') {
+
+    if (admin) {
       express.static(path.join(__dirname, "uploads"))(req, res, next);
     } else {
       const sql = "SELECT imagePath FROM images WHERE userName = ?";
@@ -217,7 +315,12 @@ app.use("/uploads", (req, res, next) => {
         if (err) {
           return res.status(500).send(err);
         }
-        const userImages = results.map((result) => path.basename(result.imagePath));
+
+        const userImages = results.map((result) => {
+          const decryptedImagePath = simpleEncryptDecrypt(result.imagePath, key);
+          return path.basename(decryptedImagePath);
+        });
+
         const requestedImage = path.basename(req.path);
 
         if (userImages.includes(requestedImage)) {
@@ -227,36 +330,51 @@ app.use("/uploads", (req, res, next) => {
         }
       });
     }
-  } catch (err) {
+  } else {
     res.status(400).json({ message: "توکن شما معتبر نمی باشد" });
   }
 });
 
 
-app.get("/user-images", authenticateToken, (req, res, next) => {
-  const sql = "SELECT imagePath FROM images WHERE userName = ?";
-  db.query(sql, [req.user.userName], (err, results) => {
-    if (err) {
-      return res.status(500).send(err);
-    }
-    const userImages = results.map((result) => path.basename(result.imagePath));
-    // console.log("[INFO] User images fetched from DB:", userImages);
 
-    req.userImages = userImages; 
-    next();
-  });
-}, (req, res) => {
-  // const { userName } = req.query;
-  // console.log(req.user.userName);
-  const sql = "SELECT * FROM images WHERE userName = ?";
-  db.query(sql, [req.user.userName], (err, results) => {
-    if (err) {
-      return res.status(500).send(err);
-    }
-    res.json(results);
-  });
-});
+app.get(
+  "/user-images",
+  authenticateToken,
+  (req, res, next) => {
+    const sql = "SELECT imagePath FROM images WHERE userName = ?";
+    db.query(sql, [req.user.userName], (err, results) => {
+      if (err) {
+        return res.status(500).send(err);
+      }
+      const userImages = results.map((result) => {
+        const decryptedImagePath = simpleEncryptDecrypt(result.imagePath, key);
+        return path.basename(decryptedImagePath);
+      });
+      // console.log("[INFO] User images fetched from DB:", userImages);
 
+      req.userImages = userImages;
+      next();
+    });
+  },
+  (req, res) => {
+    const sql = "SELECT * FROM images WHERE userName = ?";
+    db.query(sql, [req.user.userName], (err, results) => {
+      if (err) {
+        return res.status(500).send(err);
+      }
+
+      results = results.map((result) => {
+        const decryptedImagePath = simpleEncryptDecrypt(result.imagePath, key);
+        result.imagePath = decryptedImagePath.replace(/\\/g, "/");
+        return result;
+      });
+
+      // console.log("[INFO] User images fetched from DB:", results);
+
+      res.json(results);
+    });
+  }
+);
 
 // متد جستجوی کاربر در دیتابیس
 app.get("/search-users", authenticateToken, (req, res) => {
@@ -310,9 +428,6 @@ app.get("/lastImageId", authenticateToken, (req, res) => {
   });
 });
 
-
-
-
 app.delete("/images/:imageId", authenticateToken, (req, res) => {
   if (req.user.role !== "admin") {
     return res.status(403).json({ message: "دسترسی امکان پذیر نیست" });
@@ -328,7 +443,8 @@ app.delete("/images/:imageId", authenticateToken, (req, res) => {
       return res.status(404).json({ message: "Image not found" });
     }
 
-    const imagePath = results[0].imagePath;
+    const encryptedImagePath = results[0].imagePath;
+    const decryptedImagePath = simpleEncryptDecrypt(encryptedImagePath, key);
 
     const deleteSql = "DELETE FROM images WHERE imageId = ?";
     db.query(deleteSql, [imageId], (err, result) => {
@@ -336,7 +452,7 @@ app.delete("/images/:imageId", authenticateToken, (req, res) => {
         return res.status(500).send(err);
       }
 
-      fs.unlink(imagePath, (err) => {
+      fs.unlink(decryptedImagePath, (err) => {
         if (err) {
           return res.status(500).send(err);
         }
@@ -345,6 +461,7 @@ app.delete("/images/:imageId", authenticateToken, (req, res) => {
     });
   });
 });
+
 
 app.put(
   "/images/:imageId",
@@ -359,16 +476,6 @@ app.put(
       req.body;
     let imagePath = req.file ? req.file.path.replace(/\\/g, "/") : null;
 
-    // Log incoming data for debugging
-    // console.log("Received data on server:");
-    // console.log("imageId:", imageId);
-    // console.log("userId:", userId);
-    // console.log("userName:", userName);
-    // console.log("userNumber:", userNumber);
-    // console.log("photographerName:", photographerName);
-    // console.log("description:", description);
-    // console.log("imagePath:", imagePath);
-
     const selectSql = "SELECT imagePath FROM images WHERE imageId = ?";
     db.query(selectSql, [imageId], (err, results) => {
       if (err) {
@@ -378,18 +485,21 @@ app.put(
         return res.status(404).json({ message: "تصویر یافت نشد" });
       }
 
-      const oldImagePath = results[0].imagePath;
+      const oldEncryptedImagePath = results[0].imagePath;
+      const oldImagePath = simpleEncryptDecrypt(oldEncryptedImagePath, key);
 
       if (!imagePath) {
         imagePath = oldImagePath;
       }
+
+      const encryptedImagePath = simpleEncryptDecrypt(imagePath, key);
 
       const updateSql =
         "UPDATE images SET imagePath = ?, userId = ?, userName = ?, userNumber = ?, photographerName = ?, description = ? WHERE imageId = ?";
       db.query(
         updateSql,
         [
-          imagePath,
+          encryptedImagePath,
           userId,
           userName,
           userNumber,
@@ -472,12 +582,10 @@ app.post("/users", authenticateToken, addUser.none(), async (req, res) => {
         }
 
         // Send JSON response
-        res
-          .status(200)
-          .json({
-            message: "اطلاعات با موفقیت ثبت شد",
-            userId: result.insertId,
-          });
+        res.status(200).json({
+          message: "اطلاعات با موفقیت ثبت شد",
+          userId: result.insertId,
+        });
       }
     );
   });
@@ -521,12 +629,16 @@ app.put(
 
     db.query(sql, values, (err, result) => {
       if (err) {
+        console.log("Email is Duplicated");
         return res.status(500).json({ message: err.message });
       }
       res.status(200).json({ message: "User updated successfully" });
     });
   }
 );
+
+const adminSecretKey = 'adminSecretKey';
+const userSecretKey = 'userSecretKey';
 
 app.post("/login", async (req, res) => {
   const { userId, password } = req.body;
@@ -539,21 +651,33 @@ app.post("/login", async (req, res) => {
       const user = results[0];
       const isMatch = await bcrypt.compare(password, user.userPassword);
       if (isMatch) {
-        const token = jwt.sign(
-          {
-            id: user.userId,
-            role: user.isAdmin ? "admin" : "user",
-            userName: user.userName,
-          },
-          "your_jwt_secret",
-          { expiresIn: "1h" }
-        );
-        res.cookie("token", token, { httpOnly: true }); 
+        let token;
+        if (user.isAdmin) {
+          token = jwt.sign(
+            {
+              id: user.userId,
+              role: "admin",
+              userName: user.userName,
+            },
+            adminSecretKey,
+            { expiresIn: "1h" }
+          );
+        } else {
+          token = jwt.sign(
+            {
+              id: user.userId,
+              role: "user",
+              userName: user.userName,
+            },
+            userSecretKey,
+            { expiresIn: "1h" }
+          );
+        }
+        res.cookie("token", token, { httpOnly: true });
         res.json({
           authenticated: true,
           token,
           userName: user.userName,
-          isAdmin: user.isAdmin,
         });
       } else {
         res.status(401).json({ authenticated: false });
@@ -563,6 +687,8 @@ app.post("/login", async (req, res) => {
     }
   });
 });
+
+
 
 const PORT = 8081;
 app.listen(PORT, () => {
