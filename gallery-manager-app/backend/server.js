@@ -47,12 +47,12 @@ const authenticateToken = (req, res, next) => {
 
   let verified = verifyToken(token, adminSecretKey);
   if(verified){
-    console.log("Admin Verified");
+    // console.log("Admin Verified");
     admin = true;
   }else{
     verified = verifyToken(token, userSecretKey);
     if(verified){
-      console.log("User Verified");
+      // console.log("User Verified");
     }
   }
 
@@ -207,14 +207,36 @@ app.get("/users", authenticateToken, (req, res) => {
   if (req.user.role !== "admin") {
     return res.status(403).json({ message: "دسترسی امکان پذیر نیست" });
   }
-  const sql = "SELECT * FROM users";
-  db.query(sql, (err, results) => {
+
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const offset = (page - 1) * limit;
+
+  const countSql = "SELECT COUNT(*) AS total FROM users WHERE isAdmin = 0";
+  const sql = "SELECT * FROM users WHERE isAdmin = 0 LIMIT ? OFFSET ?";
+
+  db.query(countSql, (err, countResults) => {
     if (err) {
       return res.status(500).send(err);
     }
-    res.json(results);
+
+    const totalUsers = countResults[0].total;
+
+    db.query(sql, [limit, offset], (err, results) => {
+      if (err) {
+        return res.status(500).send(err);
+      }
+
+      res.json({
+        users: results,
+        totalUsers,
+      });
+    });
   });
 });
+
+
+
 
 app.get("/search-images", authenticateToken, (req, res) => {
   const searchQuery = req.query.q;
@@ -259,22 +281,40 @@ app.get("/images", authenticateToken, (req, res) => {
     return res.status(403).json({ message: "دسترسی امکان پذیر نیست" });
   }
 
-  const sql = "SELECT * FROM images";
-  db.query(sql, (err, results) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const offset = (page - 1) * limit;
+
+  const sql = "SELECT * FROM images LIMIT ? OFFSET ?";
+  const countSql = "SELECT COUNT(*) AS total FROM images";
+
+  db.query(countSql, (err, countResults) => {
     if (err) {
       return res.status(500).send(err);
     }
 
-    const key = "hashKey";
+    const totalImages = countResults[0].total;
 
-    results = results.map((result) => {
-      const decryptedImagePath = simpleEncryptDecrypt(result.imagePath, key);
-      result.imagePath = decryptedImagePath.replace(/\\/g, "/");
-      return result;
+    db.query(sql, [limit, offset], (err, results) => {
+      if (err) {
+        return res.status(500).send(err);
+      }
+
+      results = results.map((result) => {
+        const decryptedImagePath = simpleEncryptDecrypt(result.imagePath, key);
+        result.imagePath = decryptedImagePath.replace(/\\/g, "/");
+        return result;
+      });
+
+      res.json({
+        images: results,
+        totalImages,
+      });
     });
-    res.json(results);
   });
 });
+
+
 
 
 app.use("/uploads", (req, res, next) => {
@@ -341,52 +381,53 @@ app.get(
   "/user-images",
   authenticateToken,
   (req, res, next) => {
-    const sql = "SELECT imagePath FROM images WHERE userName = ?";
-    db.query(sql, [req.user.userName], (err, results) => {
-      if (err) {
-        return res.status(500).send(err);
-      }
-      const userImages = results.map((result) => {
-        const decryptedImagePath = simpleEncryptDecrypt(result.imagePath, key);
-        return path.basename(decryptedImagePath);
-      });
-      // console.log("[INFO] User images fetched from DB:", userImages);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
 
-      req.userImages = userImages;
-      next();
-    });
-  },
-  (req, res) => {
-    const sql = "SELECT * FROM images WHERE userName = ?";
-    db.query(sql, [req.user.userName], (err, results) => {
+    const countSql = "SELECT COUNT(*) AS total FROM images WHERE userName = ?";
+    const sql = "SELECT * FROM images WHERE userName = ? LIMIT ? OFFSET ?";
+
+    db.query(countSql, [req.user.userName], (err, countResults) => {
       if (err) {
         return res.status(500).send(err);
       }
 
-      results = results.map((result) => {
-        const decryptedImagePath = simpleEncryptDecrypt(result.imagePath, key);
-        result.imagePath = decryptedImagePath.replace(/\\/g, "/");
-        return result;
+      const totalImages = countResults[0].total;
+
+      db.query(sql, [req.user.userName, limit, offset], (err, results) => {
+        if (err) {
+          return res.status(500).send(err);
+        }
+
+        results = results.map((result) => {
+          const decryptedImagePath = simpleEncryptDecrypt(result.imagePath, key);
+          result.imagePath = decryptedImagePath.replace(/\\/g, "/");
+          return result;
+        });
+
+        res.json({
+          images: results,
+          totalImages,
+        });
       });
-
-      // console.log("[INFO] User images fetched from DB:", results);
-
-      res.json(results);
     });
   }
 );
 
+
 // متد جستجوی کاربر در دیتابیس
 app.get("/search-users", authenticateToken, (req, res) => {
   const searchQuery = req.query.q;
-  const sql = "SELECT * FROM users WHERE userId LIKE ? OR userName LIKE ?";
-  db.query(sql, [`%${searchQuery}%`, `%${searchQuery}%`], (err, results) => {
+  const sql = "SELECT * FROM users WHERE userId LIKE ? OR userName LIKE ? OR userNumber LIKE ?";
+  db.query(sql, [`%${searchQuery}%`, `%${searchQuery}%`, `%${searchQuery}%`], (err, results) => {
     if (err) {
       return res.status(500).send(err);
     }
     res.json(results);
   });
 });
+
 
 //
 app.get("/users/:userId", authenticateToken, (req, res) => {
@@ -532,14 +573,36 @@ app.delete("/users/:userId", authenticateToken, (req, res) => {
     return res.status(403).json({ message: "دسترسی امکان پذیر نیست" });
   }
   const userId = req.params.userId;
-  const sql = "DELETE FROM users WHERE userId = ?";
-  db.query(sql, [userId], (err, result) => {
+
+  // Check if the user has images in the images table
+  const checkImagesSql = "SELECT COUNT(*) AS imageCount FROM images WHERE userId = ?";
+  db.query(checkImagesSql, [userId], (err, results) => {
     if (err) {
       return res.status(500).send(err);
     }
-    res.json({ message: `User with ID ${userId} deleted` });
+    
+    const imageCount = results[0].imageCount;
+    if (imageCount > 0) {
+      return res.status(400).json({ message: "User cannot be deleted because they have images in the images table" });
+    }
+
+    // If no images, proceed with deleting the user
+    const deleteUserSql = "DELETE FROM users WHERE userId = ?";
+    db.query(deleteUserSql, [userId], (err, result) => {
+      if (err) {
+        return res.status(500).send(err);
+      }
+
+   
+      res.json({
+        message: `کاربر با شناسه ${userId} حذف شد`,
+        userId: userId
+      });
+    });
   });
 });
+
+
 
 const addUser = multer();
 
@@ -615,16 +678,15 @@ app.put(
 
     let sql;
     let values;
+    const emailValue = userEmail || null;
 
     if (userPassword) {
       // const hashedPassword = await bcrypt.hash(userPassword, 10);
-      sql =
-        "UPDATE users SET userName = ?, userNumber = ?, userEmail = ?, userPassword = ? WHERE userId = ?";
-      values = [userName, userNumber, userEmail, userPassword, userId];
+      sql = "UPDATE users SET userName = ?, userNumber = ?, userEmail = ?, userPassword = ? WHERE userId = ?";
+      values = [userName, userNumber, emailValue, userPassword, userId];
     } else {
-      sql =
-        "UPDATE users SET userName = ?, userNumber = ?, userEmail = ? WHERE userId = ?";
-      values = [userName, userNumber, userEmail, userId];
+      sql = "UPDATE users SET userName = ?, userNumber = ?, userEmail = ? WHERE userId = ?";
+      values = [userName, userNumber, emailValue, userId];
     }
 
     db.query(sql, values, (err, result) => {
@@ -632,10 +694,23 @@ app.put(
         console.log("Email is Duplicated");
         return res.status(500).json({ message: err.message });
       }
-      res.status(200).json({ message: "User updated successfully" });
+
+      
+      const imageSql = "UPDATE images SET userName = ?, userNumber = ? WHERE userId = ?";
+      const imageValues = [userName, userNumber, userId];
+
+      db.query(imageSql, imageValues, (imageErr, imageResult) => {
+        if (imageErr) {
+          console.log("Error updating images:", imageErr);
+          return res.status(500).json({ message: "Error updating images" });
+        }
+
+        res.status(200).json({ message: "User and related images updated successfully" });
+      });
     });
   }
 );
+
 
 const adminSecretKey = 'adminSecretKey';
 const userSecretKey = 'userSecretKey';
@@ -660,7 +735,7 @@ app.post("/login", async (req, res) => {
               userName: user.userName,
             },
             adminSecretKey,
-            { expiresIn: "1h" }
+            { expiresIn: "365d" } 
           );
         } else {
           token = jwt.sign(
@@ -670,7 +745,7 @@ app.post("/login", async (req, res) => {
               userName: user.userName,
             },
             userSecretKey,
-            { expiresIn: "1h" }
+            { expiresIn: "365d" } 
           );
         }
         res.cookie("token", token, { httpOnly: true });
@@ -687,6 +762,7 @@ app.post("/login", async (req, res) => {
     }
   });
 });
+
 
 
 
