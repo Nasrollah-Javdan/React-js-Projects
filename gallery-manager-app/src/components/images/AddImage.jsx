@@ -1,14 +1,9 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
-import {
-  getAllUsers,
-  searchUsers,
-  getLastImageId,
-  uploadImage,
-} from "../../services/index"; // Import the new function
+import { getAllUsers, searchUsers, getLastImageId, uploadImage } from "../../services/index";
 import { Spinner } from "..";
 import { COMMENT, GREEN, PURPLE } from "../../helpers/colors";
-import { jwtDecode } from "jwt-decode"; // Correct default import
+import {jwtDecode} from "jwt-decode"; // Correct default import
 
 const AddImage = () => {
   const navigate = useNavigate();
@@ -28,7 +23,6 @@ const AddImage = () => {
   const [uploadedImage, setUploadedImage] = useState("");
   const [userInfo, setUserInfo] = useState(null); 
   const alertShown = useRef(false);
-
 
   useEffect(() => {
     const token = document.cookie
@@ -64,8 +58,15 @@ const AddImage = () => {
   useEffect(() => {
     const fetchData = async () => {
       const usersData = await getAllUsers();
-      setUsers(usersData);
+      setUsers(usersData.users || []);
       const lastImageId = await getLastImageId();
+      if(!lastImageId){
+        if (!alertShown.current) {
+          alert("دسترسی شما غیرمجاز است، به صفحه لاگین منتقل میشوید");
+          alertShown.current = true;
+        }
+        navigate("/");
+      }
       setNewImageId(lastImageId + 1);
       setLoading(false);
     };
@@ -85,7 +86,7 @@ const AddImage = () => {
 
     if (value.length >= 2) {
       const results = await searchUsers(value);
-      setSearchResults(results);
+      setSearchResults(results || []);
     } else {
       setSearchResults([]);
     }
@@ -104,10 +105,11 @@ const AddImage = () => {
     setUploadedImage(imageUrl);
   };
 
-
   const createImage = async (e) => {
     e.preventDefault();
-    const userExists = users.some(
+
+    const searchResults = await searchUsers(formData.userName);
+    const userExists = searchResults.some(
       (user) =>
         user.userId === parseInt(formData.userId) &&
         user.userName === formData.userName &&
@@ -246,7 +248,7 @@ const AddImage = () => {
                         type="text"
                         name="photographerName"
                         className="form-control"
-                        required
+                        // required
                         placeholder="نام عکاس"
                         value={formData.photographerName}
                         onChange={handleInputChange}
@@ -256,7 +258,7 @@ const AddImage = () => {
                       <textarea
                         name="description"
                         className="form-control"
-                        required
+                        // required
                         placeholder="توضیحات"
                         value={formData.description}
                         onChange={handleInputChange}

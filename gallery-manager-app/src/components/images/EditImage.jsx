@@ -71,6 +71,14 @@ const EditImage = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       const usersData = await getAllUsers();
+      // console.log(usersData, alertShown.current);
+      if(!usersData){
+        if (!alertShown.current) {
+          alert("دسترسی شما غیرمجاز است، به صفحه لاگین منتقل میشوید");
+          alertShown.current = true;
+        }
+        navigate("/");
+      }
       setUsers(usersData);
       setLoading(false);
     };
@@ -89,7 +97,8 @@ const EditImage = () => {
     setFormData({ ...formData, [name]: value });
 
     if (value.length >= 2) {
-      const results = users.filter(
+      console.log(users);
+      const results = users.users.filter(
         (user) =>
           user.userId.toString().includes(value) ||
           user.userName.includes(value)
@@ -117,7 +126,7 @@ const EditImage = () => {
   const submitForm = async (event) => {
     event.preventDefault();
 
-    const userExists = users.some(
+    const userExists = users.users.some(
       (user) =>
         user.userId === parseInt(formData.userId) &&
         user.userName === formData.userName &&
@@ -252,7 +261,7 @@ const EditImage = () => {
                         type="text"
                         className="form-control"
                         value={formData.photographerName}
-                        required
+                        // required
                         onChange={handleInputChange}
                         placeholder="نام عکاس"
                       />
@@ -262,7 +271,7 @@ const EditImage = () => {
                         name="description"
                         className="form-control"
                         value={formData.description}
-                        required
+                        // required
                         onChange={handleInputChange}
                         placeholder="توضیحات"
                       />

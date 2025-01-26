@@ -10,9 +10,8 @@ import {
   RED,
   YELLOW,
   FOREGROUND,
-  COMMENT
+  COMMENT,
 } from "../../helpers/colors";
-import { deleteImage, getAllImages } from "../../services/index";
 import { jwtDecode } from "jwt-decode";
 import { useEffect, useState } from "react";
 
@@ -26,21 +25,21 @@ const Image = ({
   userName,
   userPhone,
   confirmDownload,
+  handleDelete, 
 }) => {
-
   const [userInfo, setUserInfo] = useState(null);
 
   useEffect(() => {
     const token = document.cookie
       .split("; ")
-      .find(row => row.startsWith("token="))
+      .find((row) => row.startsWith("token="))
       ?.split("=")[1];
 
     if (token) {
       try {
-        const decodedToken = jwtDecode(token); // Correct named import usage
+        const decodedToken = jwtDecode(token);
         setUserInfo({
-          isAdmin: decodedToken.role === "admin" ? 1 : 0, // Ensure boolean
+          isAdmin: decodedToken.role === "admin" ? 1 : 0,
         });
       } catch (error) {
         console.error("Error decoding token:", error);
@@ -50,7 +49,7 @@ const Image = ({
     }
   }, []);
 
-  const confirmDelete = (imageId) => {
+  const confirmDeleteImage = () => {
     confirmAlert({
       customUI: ({ onClose }) => {
         return (
@@ -59,7 +58,7 @@ const Image = ({
             style={{
               backgroundColor: CURRENTLINE,
               border: `1px solid ${PURPLE}`,
-              borderRadius: "1em"
+              borderRadius: "1em",
             }}
             className="p-4"
           >
@@ -67,9 +66,7 @@ const Image = ({
             <p style={{ color: FOREGROUND }}>آیا از این کار مطمئنی ؟</p>
             <button
               onClick={async () => {
-                await deleteImage(imageId);
-                const updatedData = await getAllImages();
-                setImages(updatedData);
+                await handleDelete(imageId); // Call handleDelete passed from parent
                 onClose();
               }}
               className="btn mx-2"
@@ -86,14 +83,17 @@ const Image = ({
             </button>
           </div>
         );
-      }
+      },
     });
   };
 
   return (
     <div className="col-md-6 mb-2">
       <div style={{ backgroundColor: CURRENTLINE }} className="card h-100">
-        <div className="card-body p-2 d-flex align-items-center" style={{height: "220px"}}>
+        <div
+          className="card-body p-2 d-flex align-items-center"
+          style={{ height: "220px" }}
+        >
           <div className="row mx-auto">
             <div className="col-md-4 col-sm-5 p-0 my-auto">
               <img
@@ -109,17 +109,14 @@ const Image = ({
                   شناسه عکس :{"  "}
                   <span className="fw-bold">{imageId}</span>
                 </li>
-
                 <li className="list-group-item list-group-item-dark">
                   شناسه مشتری : {"  "}
                   <span className="fw-bold">{userId}</span>
                 </li>
-
                 <li className="list-group-item list-group-item-dark">
                   نام و نام خانوادگی :{"  "}
                   <span className="fw-bold">{userName}</span>
                 </li>
-
                 <li className="list-group-item list-group-item-dark">
                   شماره همراه مشتری : {"  "}
                   <span className="fw-bold">{userPhone}</span>
@@ -143,7 +140,6 @@ const Image = ({
               >
                 <i className="fa fa-eye" />
               </Link>
-
               {userInfo?.isAdmin ? (
                 <>
                   <Link
@@ -155,7 +151,7 @@ const Image = ({
                       imagePath,
                       userId,
                       userName,
-                      userPhone
+                      userPhone,
                     }}
                     className="btn my-1"
                     style={{ backgroundColor: CYAN }}
@@ -163,7 +159,7 @@ const Image = ({
                     <i className="fa fa-pen" />
                   </Link>
                   <button
-                    onClick={() => confirmDelete(imageId)}
+                    onClick={confirmDeleteImage}
                     className="btn my-1"
                     style={{ backgroundColor: RED }}
                   >
@@ -171,15 +167,13 @@ const Image = ({
                   </button>
                 </>
               ) : (
-                <>
-                  <button
-                    onClick={() => confirmDownload(imagePath)}
-                    className="btn my-1"
-                    style={{ backgroundColor: GREEN }}
-                  >
-                    <i className="fas fa-download" />
-                  </button>
-                </>
+                <button
+                  onClick={() => confirmDownload(imagePath)}
+                  className="btn my-1"
+                  style={{ backgroundColor: GREEN }}
+                >
+                  <i className="fas fa-download" />
+                </button>
               )}
             </div>
           </div>

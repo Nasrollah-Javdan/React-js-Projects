@@ -51,6 +51,13 @@ const AddUser = () => {
     const fetchLastUser = async () => {
       try {
         const data = await getLastUserId();
+        if(!data[0]){
+          if (!alertShown.current) {
+            alert("دسترسی شما غیرمجاز است، به صفحه لاگین منتقل میشوید");
+            alertShown.current = true;
+          }
+          navigate("/");
+        }
         setLastUser(data[0]);
       } catch (error) {
         console.error("Error fetching last user:", error);
@@ -136,7 +143,8 @@ const AddUser = () => {
 
   return (
     <>
-      <section className="p-3">
+      {lastUser ? (
+        <section className="p-3">
         <img
           src={require("../../assets/man-taking-note.png")}
           height="400px"
@@ -296,6 +304,7 @@ const AddUser = () => {
           </div>
         </div>
       </section>
+      ) : null}
     </>
   );
 };

@@ -18,19 +18,24 @@ const fetchWithToken = async (url, options = {}) => {
 
   const response = await fetch(url, options);
   if (!response.ok) {
-    throw new Error("Network response was not ok");
+    return response.status;
   }
+  console.log(response);
   return response.json();
 };
 
-export const getAllUsers = async () => {
+export const getAllUsers = async (page = 1, limit = 15) => {
   try {
-    const data = await fetchWithToken(`${SERVER_URL}/users`);
+    const response = await fetchWithToken(`${SERVER_URL}/users?page=${page}&limit=${limit}`);
+    const data = await response;
+    console.log("Fetched users data:", data);
     return data;
   } catch (error) {
     console.error("Fetch error:", error);
+    return { users: [], totalUsers: 0 };
   }
 };
+
 
 export const uploadImage = async (imageData) => {
   const url = "http://localhost:8081/upload";
@@ -47,16 +52,28 @@ export const uploadImage = async (imageData) => {
   }
 };
 
+
 export const deleteUser = async (id) => {
   try {
-    const data = await fetchWithToken(`${SERVER_URL}/users/${id}`, {
+    const response = await fetchWithToken(`${SERVER_URL}/users/${id}`, {
       method: "DELETE",
     });
-    return data;
+
+    console.log(response);
+    
+    if (response == 400) {
+      throw new Error(`امکان حذف وجود نداره، زیرا تصاویری متعلق به این کاربر در پایگاه داده موجود است`);
+    }
+    
+    return response; 
+
+    
   } catch (error) {
-    console.error("Fetch error:", error);
+    return { error: error.message };
   }
 };
+
+
 
 
 export const addUser = async (data) => {
@@ -176,25 +193,33 @@ export const getLastImageId = async () => {
   }
 };
 
-export const getUserImages = async (userName) => {
+export const getUserImages = async (userName, page = 1, limit = 10) => {
   try {
-    const data = await fetchWithToken(
-      `${SERVER_URL}/user-images?userName=${userName}`
+    const response = await fetchWithToken(
+      `${SERVER_URL}/user-images?userName=${userName}&page=${page}&limit=${limit}`
     );
+    const data = await response;
+    console.log("Fetched user images data:", data); // Log the fetched data
     return data;
   } catch (error) {
     console.error("Fetch user images error:", error);
+    return { images: [], totalImages: 0 };
   }
 };
 
-export const getAllImages = async () => {
+
+export const getAllImages = async (page = 1, limit = 10) => {
   try {
-    const data = await fetchWithToken(`${SERVER_URL}/images`);
+    const response = await fetchWithToken(`${SERVER_URL}/images?page=${page}&limit=${limit}`);
+    // console.log("Fetched images data:", response);
+    const data = await response;
+    console.log("Fetched images data:", data);
     return data;
   } catch (error) {
     console.error("Fetch images error:", error);
   }
 };
+
 
 export const deleteImage = async (imageId) => {
   try {
@@ -209,14 +234,16 @@ export const deleteImage = async (imageId) => {
 
 export const searchUsers = async (query) => {
   try {
-    const data = await fetchWithToken(
+    const response = await fetchWithToken(
       `http://localhost:8081/search-users?q=${query}`
     );
+    const data = await response;
     return data;
   } catch (error) {
     console.error("Search error:", error);
   }
 };
+
 
 export const searchImages = async (query) => {
   try {
