@@ -105,7 +105,7 @@ const AddUser = () => {
   
         const response = await addUser(data);
   
-        console.log("Response from addUser:", response);
+        // console.log("Response from addUser:", response);
   
         if (response.message === "اطلاعات با موفقیت ثبت شد") {
           alert(`کاربر جدید با شناسه "${lastUser.userId + 1}" با موفقیت ایجاد شد`);

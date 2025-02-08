@@ -122,7 +122,7 @@ const EditUser = () => {
 
         const response = await editUser(userId, updatedUser);
 
-        console.log("Response from editUser:", response);
+        // console.log("Response from editUser:", response);
 
         if (
           response.message === "User and related images updated successfully"
@@ -156,7 +156,7 @@ const EditUser = () => {
     setShowPassword(!showPassword);
   };
 
-  return ( userInfo ? (
+  return ( user.userName ? (
     <>
       <section className="p-3">
         <div className="container">

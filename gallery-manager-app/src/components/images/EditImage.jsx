@@ -7,15 +7,14 @@ import { jwtDecode } from "jwt-decode";
 
 const EditImage = () => {
   const location = useLocation();
-  const {
-    photographerName,
-    description,
-    imageId,
-    imagePath,
-    userId,
-    userName,
-    userPhone,
-  } = location.state;
+  const photographerName = location?.state?.photographerName;
+  const description = location?.state?.description;
+  const imageId = location?.state?.imageId;
+  const imagePath = location?.state?.imagePath;
+  const userId = location?.state?.userId;
+  const userName = location?.state?.userName;
+  const userPhone = location?.state?.userPhone;
+
 
   const [formData, setFormData] = useState({
     userId,
@@ -71,8 +70,8 @@ const EditImage = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       const usersData = await getAllUsers();
-      // console.log(usersData, alertShown.current);
-      if(!usersData){
+      console.log(usersData, alertShown.current);
+      if(usersData == 403){
         if (!alertShown.current) {
           alert("دسترسی شما غیرمجاز است، به صفحه لاگین منتقل میشوید");
           alertShown.current = true;
@@ -97,7 +96,7 @@ const EditImage = () => {
     setFormData({ ...formData, [name]: value });
 
     if (value.length >= 2) {
-      console.log(users);
+      // console.log(users);
       const results = users.users.filter(
         (user) =>
           user.userId.toString().includes(value) ||

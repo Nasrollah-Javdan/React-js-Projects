@@ -41,8 +41,8 @@ const App = () => {
 
   const resetTimer = () => {
     const token = document.cookie.split(";").find(cookie => cookie.trim().startsWith("token="));
-    if (location.pathname === "/" || !token) return; // Skip inactivity check on login page or if no token
-    setInactivityTime(0); // Reset inactivity time
+    if (location.pathname === "/" || !token) return; 
+    setInactivityTime(0); 
     // console.log("Timer reset");
     if (inactivityTimer.current) {
       clearTimeout(inactivityTimer.current);
@@ -78,21 +78,21 @@ const App = () => {
 
   useEffect(() => {
     const token = document.cookie.split(";").find(cookie => cookie.trim().startsWith("token="));
-    if (location.pathname === "/" || !isInactive || !token) return; // Skip logging on login page or if not inactive or no token
+    if (location.pathname === "/" || !isInactive || !token) return; 
     intervalRef.current = setInterval(() => {
       setInactivityTime(prevTime => {
         const newTime = prevTime + 1;
         // console.log(`User is inactive for ${newTime} seconds`);
         return newTime;
       });
-    }, 1000); // Log every second
+    }, 1000); 
 
     return () => clearInterval(intervalRef.current);
   }, [isInactive, location.pathname]);
 
   useEffect(() => {
     const token = document.cookie.split(";").find(cookie => cookie.trim().startsWith("token="));
-    if (!token) return; // Skip if no token
+    if (!token) return; 
     if (isInactive) {
       logoutTimer.current = setTimeout(() => {
         if (!alertShown.current) {

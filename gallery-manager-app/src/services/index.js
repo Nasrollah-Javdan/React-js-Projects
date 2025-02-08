@@ -20,7 +20,7 @@ const fetchWithToken = async (url, options = {}) => {
   if (!response.ok) {
     return response.status;
   }
-  console.log(response);
+  // console.log(response);
   return response.json();
 };
 
@@ -28,7 +28,7 @@ export const getAllUsers = async (page = 1, limit = 15) => {
   try {
     const response = await fetchWithToken(`${SERVER_URL}/users?page=${page}&limit=${limit}`);
     const data = await response;
-    console.log("Fetched users data:", data);
+    // console.log("Fetched users data:", data);
     return data;
   } catch (error) {
     console.error("Fetch error:", error);
@@ -59,7 +59,7 @@ export const deleteUser = async (id) => {
       method: "DELETE",
     });
 
-    console.log(response);
+    // console.log(response);
     
     if (response == 400) {
       throw new Error(`امکان حذف وجود نداره، زیرا تصاویری متعلق به این کاربر در پایگاه داده موجود است`);
@@ -80,7 +80,7 @@ export const addUser = async (data) => {
   const url = `${SERVER_URL}/users`;
   try {
     for (let [key, value] of data.entries()) {
-      console.log(`${key}: ${value}`);
+      // console.log(`${key}: ${value}`);
     }
 
     const token = getToken(); 
@@ -93,17 +93,17 @@ export const addUser = async (data) => {
       credentials: 'include',
     });
 
-    console.log("Response status:", response.status);
+    // console.log("Response status:", response.status);
 
     
     const contentType = response.headers.get("content-type");
     if (contentType && contentType.indexOf("application/json") !== -1) {
       const responseData = await response.json();
-      console.log("Server response (JSON):", responseData);
+      // console.log("Server response (JSON):", responseData);
       return responseData;
     } else {
       const responseText = await response.text();
-      console.log("Server response (text):", responseText);
+      // console.log("Server response (text):", responseText);
       throw new Error("Unexpected response type");
     }
   } catch (error) {
@@ -132,16 +132,16 @@ export const editUser = async (id, user) => {
       credentials: 'include',
     });
 
-    console.log("Response status:", response.status);
+    // console.log("Response status:", response.status);
 
     const contentType = response.headers.get("content-type");
     if (contentType && contentType.indexOf("application/json") !== -1) {
       const responseData = await response.json();
-      console.log("Server response (JSON):", responseData);
+      // console.log("Server response (JSON):", responseData);
       return responseData;
     } else {
       const responseText = await response.text();
-      console.log("Server response (text):", responseText);
+      // console.log("Server response (text):", responseText);
       throw new Error("Unexpected response type");
     }
   } catch (error) {
@@ -199,7 +199,7 @@ export const getUserImages = async (userName, page = 1, limit = 10) => {
       `${SERVER_URL}/user-images?userName=${userName}&page=${page}&limit=${limit}`
     );
     const data = await response;
-    console.log("Fetched user images data:", data); // Log the fetched data
+    // console.log("Fetched user images data:", data); // Log the fetched data
     return data;
   } catch (error) {
     console.error("Fetch user images error:", error);
@@ -213,7 +213,7 @@ export const getAllImages = async (page = 1, limit = 10) => {
     const response = await fetchWithToken(`${SERVER_URL}/images?page=${page}&limit=${limit}`);
     // console.log("Fetched images data:", response);
     const data = await response;
-    console.log("Fetched images data:", data);
+    // console.log("Fetched images data:", data);
     return data;
   } catch (error) {
     console.error("Fetch images error:", error);
@@ -247,7 +247,7 @@ export const searchUsers = async (query) => {
 
 export const searchImages = async (query) => {
   try {
-    console.log(query);
+    // console.log(query);
     const data = await fetchWithToken(
       `http://localhost:8081/search-images?q=${query}`
     );

@@ -68,9 +68,9 @@ const Images = ({ confirmDelete, confirmDownload }) => {
         }
         navigate("/");
       }
-      setImages(result.images || []); // Ensure result.images is an array
-      setPageCount(Math.ceil(result.totalImages / imagesPerPage)); // Set total pages
-      setFilteredImages(result.images || []); // Ensure result.images is an array
+      setImages(result.images || []); 
+      setPageCount(Math.ceil(result.totalImages / imagesPerPage));
+      setFilteredImages(result.images || []);
       setLoading(false);
     }
   };
@@ -83,7 +83,7 @@ const Images = ({ confirmDelete, confirmDownload }) => {
     const fetchSearchResults = async () => {
       if (searchTerm) {
         const result = await searchImages(searchTerm);
-        console.log(result);
+        // console.log(result);
         setFilteredImages(result || []); // Ensure result is an array
       } else {
         setFilteredImages(images);
