@@ -335,12 +335,12 @@ app.use("/uploads", (req, res, next) => {
 
   let verified = verifyToken(token, adminSecretKey);
   if(verified){
-    console.log("Admin Verified");
+    // console.log("Admin Verified");
     admin = true;
   }else{
     verified = verifyToken(token, userSecretKey);
     if(verified){
-      console.log("User Verified");
+      // console.log("User Verified");
     }
   }
 
@@ -614,12 +614,12 @@ app.post("/users", authenticateToken, addUser.none(), async (req, res) => {
   const { userId, userName, userNumber, userEmail, userPassword } = req.body;
 
   // Log received data on the server
-  console.log("Received data on server:");
-  console.log("userId:", userId);
-  console.log("userName:", userName);
-  console.log("userNumber:", userNumber);
-  console.log("userEmail:", userEmail);
-  console.log("userPassword:", userPassword);
+  // console.log("Received data on server:");
+  // console.log("userId:", userId);
+  // console.log("userName:", userName);
+  // console.log("userNumber:", userNumber);
+  // console.log("userEmail:", userEmail);
+  // console.log("userPassword:", userPassword);
 
   const checkSql = "SELECT * FROM users WHERE userName = ? OR userNumber = ?";
   db.query(checkSql, [userName, userNumber], async (checkErr, results) => {
@@ -669,12 +669,12 @@ app.put(
     const { userName, userNumber, userEmail, userPassword } = req.body;
 
     // Log received data on the server
-    console.log("Received data on server:");
-    console.log("userId:", userId);
-    console.log("userName:", userName);
-    console.log("userNumber:", userNumber);
-    console.log("userEmail:", userEmail);
-    console.log("userPassword:", userPassword);
+    // console.log("Received data on server:");
+    // console.log("userId:", userId);
+    // console.log("userName:", userName);
+    // console.log("userNumber:", userNumber);
+    // console.log("userEmail:", userEmail);
+    // console.log("userPassword:", userPassword);
 
     let sql;
     let values;
@@ -691,7 +691,7 @@ app.put(
 
     db.query(sql, values, (err, result) => {
       if (err) {
-        console.log("Email is Duplicated");
+        // console.log("Email is Duplicated");
         return res.status(500).json({ message: err.message });
       }
 
@@ -701,7 +701,7 @@ app.put(
 
       db.query(imageSql, imageValues, (imageErr, imageResult) => {
         if (imageErr) {
-          console.log("Error updating images:", imageErr);
+          // console.log("Error updating images:", imageErr);
           return res.status(500).json({ message: "Error updating images" });
         }
 
